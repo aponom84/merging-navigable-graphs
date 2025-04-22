@@ -28,104 +28,95 @@
 \maketitle
 
 \section{Introduction}
-In recent years, navigable small-world graphs have become a cornerstone of efficient approximate nearest neighbor (ANN) search in high-dimensional spaces, a problem prevalent in fields such as recommendation systems, image retrieval, and natural language processing. Algorithms like Hierarchical Navigable Small World (HNSW) \cite{hnsw} and its predecessor Navigable Small World (NSW) \cite{nsw2011,nsw2012,nsw2014} provide a robust and scalable framework for organizing data into graph structures that support fast similarity searches. However, one limitation inherent to these methods is the lack of a natural mechanism for node deletion, making the need for merging and compacting graphs crucial for maintaining the efficiency and accuracy of the search index over time.
+Navigable small-world graphs have emerged as a cornerstone for efficient approximate nearest neighbor (ANN) search in high-dimensional spaces. This problem is crucial in fields such as recommendation systems, image retrieval, and natural language processing. Algorithms like Hierarchical Navigable Small World (HNSW) \cite{hnsw} and its predecessor Navigable Small World (NSW) \cite{nsw2011,nsw2012,nsw2014} provide robust and scalable frameworks for organizing data into graph structures that support fast similarity searches.
 
-The HNSW algorithm, widely adopted for its performance and scalability, supports dynamic insertions but lacks native support for node deletion. As databases grow and evolve, some nodes become outdated or irrelevant, requiring a process to filter out these deleted vertices. Merging operations allow for a form of "data compaction," where the graphs from two or more databases are merged, and nodes marked for deletion are omitted from the final structure. This process not only improves space efficiency but also enhances the accuracy of future searches by eliminating superfluous data points.
+One key limitation of these methods is the absence of a natural mechanism for node deletion, which is essential as datasets evolve and obsolete items accumulate. This necessitates merging and compacting graphs to maintain efficiency and accuracy in the search index over time.
 
-In this work, we propose three novel algorithms designed to efficiently merge navigable graphs, focusing on HNSW but extending applicability to other graph-based data structures like NSW \cite{nsw2011}, NSG \cite{NSG}. The merging algorithms—"Naive Merge," "Merge1," and "Merge2"—offer progressively advanced methods to combine graphs while preserving the properties that make navigable graphs effective for nearest neighbor search. These methods ensure that the resulting merged index excludes deleted nodes and maintains the structural integrity needed for fast search operations.
+While HNSW supports dynamic insertions, it lacks native support for deletions. As a result, merging becomes a form of "compaction," where graphs from two or more sources are combined, and nodes marked for deletion are omitted. This not only improves space efficiency but also enhances search quality by reducing noise from irrelevant entries.
 
-\section {Search}
+In this work, we propose three novel algorithms—\textbf{Naive Merge}, \textbf{Merge1}, and \textbf{Merge2}—for efficiently merging navigable graphs. While our methods primarily target HNSW, they are generalizable to other graph-based data structures such as NSW \cite{nsw2011} and NSG \cite{NSG}. These algorithms preserve graph navigability and ensure that deleted nodes are excluded from the merged result, maintaining the structural integrity necessary for fast ANN search.
 
+\section{Search}
 
-We start from the basic search over the sigle graph. 
+We begin by describing basic search operations over a single graph.
 
 \begin{algorithm}
 \caption{\textsc{LocalSearch}($G, q, C, k, L$)}\label{alg:local_search}
-\textbf{Require:} Graph $G = (V, E)$, query $q \in \mathbb{R}^d$, initial set of candidate vertexes $C \subset V$,  $k \in \mathbb{N}$, $L \in \mathbb{N}$ \\
-\textbf{Ensure:} approximate k-nearest neighbors $V^* \subset V$
+\textbf{Input:} Graph $G = (V, E)$, query $q \in \mathbb{R}^d$, initial candidate set $C \subset V$, $k \in \mathbb{N}$, $L \in \mathbb{N}$ \\
+\textbf{Output:} Approximate $k$-nearest neighbors $V^* \subset V$
 \begin{algorithmic}[1]
 % \State $C \gets \textsc{InitializeCandidates}()$
 \While{True}
     \State $u \gets$ nearest unvisited point to $q$ in $C$
     \State $U \gets \{v \mid (u, v) \in E\}$
     \For{$v \in U$}
-        \If{$v$ is not visited}
+        \If{$v$ is unvisited}
             \State $C \gets C \cup \{v\}$
         \EndIf
     \EndFor
     \If{$|C| > L$}
         \State $C \gets$ top $L$ nearest points to $q$ in $C$
     \EndIf
-    \If{$C$ is not updated}
+    \If{no updates to $C$}
         \State \textbf{break}
     \EndIf
 \EndWhile
-\State \Return nearest point to $q$ in $C$
+\State \Return top-$k$ nearest points to $q$ in $C$
 \end{algorithmic}
 \end{algorithm}
 
-$L$ is a parameter that controls the width of search. 
-It helps to avoid local minima vertexes. In [HNSW] paper it is named \textbf{ef} parameter (expansion factor). 
-
-
+The parameter $L$ controls the breadth of the search and helps avoid getting trapped in local minima. In the HNSW paper, it is referred to as the \textbf{ef} (expansion factor) parameter.
 
 \begin{algorithm}
-\caption{\textsc{HNSW-Search}($\mathcal{H}, q, v_0, k, L, \ell $)}\label{alg:hnsw_search}
-\textbf{Require:} The HNSW layers represented as  a sequence of graphs $\mathcal{H} = (G_i)_{i=0}^{l_{max}} )$, query $q \in \mathbb{R}^d$, initial vertex $v_0 \in V$,  $k \in \mathbb{N}$, $L \in \mathbb{N}$, the layer number in which the search should be performed $\ell$ \\    
-\textbf{Ensure:} approximate k-nearest neighbors $V^* \subset V$
+\caption{\textsc{HNSW-Search}($\mathcal{H}, q, v_0, k, L, \ell$)}\label{alg:hnsw_search}
+\textbf{Input:} HNSW graph $\mathcal{H} = (G_i)_{i=0}^{l_{\max}}$, query $q \in \mathbb{R}^d$, starting vertex $v_0 \in V$, $k, L \in \mathbb{N}$, search layer $\ell$ \\
+\textbf{Output:} Approximate $k$-nearest neighbors $V^* \subset V$
 \begin{algorithmic}[1]
-% \State $C \gets \textsc{InitializeCandidates}()$
-
 \State $v^* \gets v_0$ 
-\For{$i = l_{max} \; \textbf{to} \; \ell $}
-    \State $v^* \gets \textsc{LocalSearch}(G=G_i, q=q, C={v^*}, k=1, L=L)$
+\For{$i = l_{\max} \textbf{ down to } \ell$}
+    \State $v^* \gets \textsc{LocalSearch}(G=G_i, q=q, C=\{v^*\}, k=1, L=L)$
 \EndFor
-
-\State \Return \textsc{LocalSearch}($ G=G_{\ell}, q=q, C={v^*}, k=k, L=L$)
+\State \Return \textsc{LocalSearch}$(G_\ell, q, \{v^*\}, k, L)$
 \end{algorithmic}
 \end{algorithm}
 
-\section {Neighborhood Construction Strategies}
+\section{Neighborhood Construction Strategies}
 
-There are different strategies to form a vertex neighborhood. Our proposed merge algorithms are independent in neighborhood procedures. Merge algorithm can use a neighborhood construction procedure as an input parameter.
+Various strategies exist for selecting a node's neighborhood. Our merging algorithms are agnostic to the specific neighborhood construction method, which can be provided as a parameter.
 
 \begin{algorithm}
-\caption{\textsc{KNN-Neighborhood-Construction}$(v^*,C, k)$}
-\label{alg:knntrategy}
-\textbf{Require:} vertex $v^* \in V$, neighbor candidates $C \subseteq V$, $k \in \mathbb{N} $\\
-\textbf{Ensure:} selected neighbors $C' \subseteq C$
+\caption{\textsc{KNN-Neighborhood-Construction}($v^*, C, k$)}\label{alg:knntrategy}
+\textbf{Input:} Vertex $v^*$, candidate set $C$, number of neighbors $k$ \\
+\textbf{Output:} Set $C'$ of $k$ closest neighbors
 \begin{algorithmic}[1]
-    
-    \State $C' \gets \text{k-closest neighbors of } C \text{ to } v^*$
-    \State \Return $C'$
+\State $C' \gets$ $k$-nearest neighbors of $v^*$ in $C$
+\State \Return $C'$
 \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}
-\caption{\textsc{RNG-Neighborhood-Construction}$(v^*, C, m)$}
-\label{alg:rngstrategy}
-\textbf{Require:} vertex $v^* \in V$, neighbor candidates $C \subseteq V$, maximum neighborhood size $m \in \mathbb{N}$\\
-\textbf{Ensure:} selected neighbors $C' \subseteq C$
+\caption{\textsc{RNG-Neighborhood-Construction}($v^*, C, m$)}\label{alg:rngstrategy}
+\textbf{Input:} Vertex $v^*$, candidate set $C$, maximum neighborhood size $m$ \\
+\textbf{Output:} Filtered neighbor set $C'$
 \begin{algorithmic}[1]
-    \State sort $v \in C$ in ascending order of $\rho(v^*,v)$
-    \State $C' \gets \emptyset$
-    \For{$v \in U$}
-        \State $f \gets \text{true}$
-        \For{$w \in C'$}
-            \If{$\delta(v^*,v) \geq \delta(v,w)$}
-                \State $f \gets \text{false}$
-                \State \textbf{break}
-            \EndIf
-        \EndFor
-        \If{$f$}
-            \State $C' \gets C' \cup \{v\}$
-        \EndIf
-
-        \If{$|C'| \geq m $}
+\State Sort $C$ in ascending order by distance to $v^*$
+\State $C' \gets \emptyset$
+\For{$v \in C$}
+    \State $f \gets$ true
+    \For{$w \in C'$}
+        \If{$\rho(v^*, v) \geq \rho(v, w)$}
+            \State $f \gets$ false
             \State \textbf{break}
         \EndIf
     \EndFor
-    \State \Return $C'$
+    \If{$f$}
+        \State $C' \gets C' \cup \{v\}$
+    \EndIf
+    \If{$|C'| \geq m$}
+        \State \textbf{break}
+    \EndIf
+\EndFor
+\State \Return $C'$
 \end{algorithmic}
 \end{algorithm}
 
