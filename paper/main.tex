@@ -122,58 +122,79 @@ Various strategies exist for selecting a node's neighborhood. Our merging algori
 
 \section{Merge Algorithms}
 
-We provide 3 merge algorithms: "Naive Merge", "Merge1", and "Merge2". We also refer to these algorithm as layer-merge algorithms. "Naive Merge" is a straight forward method, while "Merge1" and "Merge2" are more advanced. Together, these two algorithms constitute the main contribution of the work. The HNSW structure is a sequence of graphs, called layers. We start from description of a general algorithm for merging multi layers structure.
 
-\subsection{HNSW General Merge}
+%We provide 3 merge algorithms: "Naive Merge", "Merge1", and "Merge2". We also refer to these algorithm as layer-merge algorithms. "Naive Merge" is a straight forward method, while "Merge1" and "Merge2" are more advanced. Together, these two algorithms constitute the main contribution of the work. The HNSW structure is a sequence of graphs, called layers. We start from description of a general algorithm for merging multi layers structure.
+We now present three algorithms for merging HNSW graphs: \textsc{Merge-Naive}, \textsc{Merge1}, and \textsc{Merge2}. These algorithms operate layer by layer. We first describe the general procedure for merging the multi-layer HNSW structure, followed by the specific logic for merging a single layer (\textit{layer-merge algorithms}).
 
-HNSW-General-Merge algorithm \ref{alg:general_merge} is a straight forward. It uses one of the layer-merge algorithm to merge each HNSW layer. To able layer-merge algorithm to perform fast search using multi-layer structure of HNSW, HNSW-General-Merge algorithm passes to layer merge algorithm both HNSW structures $\mathcal{H}_a, \mathcal{H}_b$, and the layer number $\ell=i$ to which the merge should be performed. An order of merging layers doesn't mater. Thus merging of layers can be done in parallel.
+\subsection{HNSW General Merge Framework}
+
+The \textsc{HNSW-General-Merge} algorithm (Algorithm~\ref{alg:general_merge}) provides a framework for merging two HNSW structures, $\mathcal{H}_a$ and $\mathcal{H}_b$. It iterates through each layer level and applies a chosen layer-merge algorithm (\textsc{Merge-Naive}, \textsc{Merge1}, or \textsc{Merge2}) to combine the corresponding layers $G^a_i$ and $G^b_i$. The layer-merge algorithms require access to the full HNSW structures $\mathcal{H}_a, \mathcal{H}_b$ to perform efficient searches (using \textsc{HNSW-Search} or \textsc{LocalSearch}) down to the target layer $\ell=i$.
+
+Let $l_{\max}^a$ and $l_{\max}^b$ be the maximum layer indices for $\mathcal{H}_a$ and $\mathcal{H}_b$, respectively. The merged graph $\mathcal{H}_c$ will have $l_{\max}^c = \max(l_{\max}^a, l_{\max}^b)$ layers.
 
 \begin{algorithm}
-\caption{\textsc{HNSW-General-Merge}($\mathcal{H}_a, \mathcal{H}_b$)}\label{alg:general_merge}
-\textbf{Require:} The HNSW graphs $\mathcal{H}_a = (G^a_i), \mathcal{H}_b = (G^b_i)$ \\
-\textbf{Ensure:}  Merged HNSW graphs $\mathcal{H}_c = (G^c_i)$ 
+\caption{\textsc{HNSW-General-Merge}($\mathcal{H}_a, \mathcal{H}_b, \text{LayerMergeAlgo}, \text{params}$)}\label{alg:general_merge}
+\textbf{Input:} HNSW graphs $\mathcal{H}_a$, $\mathcal{H}_b $. Chosen layer merge algorithm $\text{LayerMergeAlgo}$ (e.g., \textsc{Merge-Naive}). Algorithm-specific parameters $\text{params}$. \\
+\textbf{Output:} Merged HNSW graph $\mathcal{H}_c = (G^c_i)_{i=0}^{l_{\max}^c}$
 \begin{algorithmic}[1]
-
-\For{$i = 0 \textbf{ to } \max(|\mathcal{H}_a|, |\mathcal{H}_b|) $}
-    \State $G^c_i \gets \text{Merge}(\mathcal{H}_a, \mathcal{H}_b, \ell=i, \text{algorithm specific params})$
+\State $l_{\max}^a \gets \mathcal{H}_a.\text{getMaxLayerNumber()}$
+\State $l_{\max}^b \gets \mathcal{H}_b.\text{getMaxLayerNumber()}$
+\State $l_{\max}^c \gets \max(l_{\max}^a, l_{\max}^b)$
+\For{$i = 0 \textbf{ to } l_{\max}^c$} \Comment{Merge each layer}    
+    \State $G^c_i \gets \text{LayerMergeAlgo}(\mathcal{H}_a, \mathcal{H}_b, \ell=i, \text{params})$ \Comment{Calls e.g., Merge-Naive}
 \EndFor
+\State $\mathcal{H}_c \gets (G^c_i)_{i=0}^{l_{\max}^c}$ % Construction is implicit in the loop
 
-\State $\mathcal{H}_c \gets (G^c_i)_i^{\max(|\mathcal{H}_a|, |\mathcal{H}_b|)}$
-
-\State \Return $\mathcal{H}^c$
+\State \Return $\mathcal{H}_c$
 \end{algorithmic}
 \end{algorithm}
 
+Note that the merging of different layers (iterations of the loop in Algorithm~\ref{alg:general_merge}) is independent and can potentially be parallelized.
+
+
+
+%\subsection{Naive Merge}
+%The Naive Merge algorithm \ref{alg:merge_naive} surprisingly is very simple. It takes one vertex $v^*$ by one from the graph $G^a$. Then algorithm prepares the candidate set $\mathcal{C}$ for a new neighborhood (lines 6,7). It uses \textsc{HNSW-Search} to get $m$-closest vertices to $v^*$ in the graph $G^b$, and combines with an old neighborhood of the vertex $v^*$. After that in the line 8 the candidate set $\mathcal{C}$ is passed into the neighborhood construction function, which selects the vertices for the new merged neighborhood for $v^*$.
+%Lines 9-12 contains the same logic for the forming new neighborhoods of graph $G^b$
+
 \subsection{Naive Merge}
-The Naive Merge algorithm \ref{alg:merge_naive} surprisingly is very simple. It takes one vertex $v^*$ by one from the graph $G^a$. Then algorithm prepares the candidate set $\mathcal{C}$ for a new neighborhood (lines 6,7). It uses \textsc{HNSW-Search} to get $m$-closest vertices to $v^*$ in the graph $G^b$, and combines with an old neighborhood of the vertex $v^*$. After that in the line 8 the candidate set $\mathcal{C}$ is passed into the neighborhood construction function, which selects the vertices for the new merged neighborhood for $v^*$.
-Lines 9-12 contains the same logic for the forming new neighborhoods of graph $G^b$
+The \textsc{Merge-Naive} algorithm (Algorithm~\ref{alg:merge_naive}) provides a straightforward method for merging a single layer $\ell$. For each vertex $v^*$ originating from graph $G^a_\ell$, it searches for its potential neighbors in graph $G^b_\ell$ using the full \textsc{HNSW-Search} procedure down to layer $\ell$. These candidates are combined with the original neighbors of $v^*$ in $G^a_\ell$. The final neighborhood for $v^*$ in the merged graph $G^c_\ell$ is selected from this combined set using the chosen \textsc{NeighborhoodConstruction} strategy. The process is repeated for vertices originating from $G^b_\ell$.
+
+
+
+
+
 
 \begin{algorithm}
-\caption{\textsc{Merge-Naive}($\mathcal{H}_a, \mathcal{H}_b,  \ell, \text{search\_ef}$)}\label{alg:merge_naive}
-\textbf{Require:} The HNSW graphs $\mathcal{H}_a = (G^a_i)$, $\mathcal{H}_b = (G^b_i)$, and the level number $\ell$, search parameter $\text{search\_ef}$ \\
-\textbf{Ensure:} Merged graph $G^c$ 
+\caption{\textsc{Merge-Naive}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{NeighborhoodConstruction}, m, \text{search\_ef}, v_{entry}$)}\label{alg:merge_naive}
+\textbf{Input:} HNSW graphs $\mathcal{H}_a$, $\mathcal{H}_b$; target layer $\ell$; Neighborhood construction function \textsc{NeighborhoodConstruction}; target neighborhood size $m$; search parameter $\text{search\_ef}$; entry point $v_{entry}$ (e.g., from $\mathcal{H}_a$ or $\mathcal{H}_b$) \\
+\textbf{Output:} Merged graph $G^c$
 \begin{algorithmic}[1]
-\State $V^c \gets V^a \cup V^b$
-\State $E^c \gets \emptyset$
-\State $G^a \gets G^a_{\ell}$
-\State $G^b \gets G^b_{\ell}$
-% \State $m \gets \mathcal{H}_a.m_0$ if $\ell = 0$ else $\mathcal{H}_a.m$
+\State $G^a \gets \mathcal{H}_a\text{.GetLayer}(\ell) $; $G^b \gets\mathcal{H}_a\text{.GetLayer}(\ell)$ 
+\State $V^a \gets \text{vertices}(G^a)$; $V^b \gets \text{vertices}(G^b)$
+\State $E^a \gets \text{edges}(G^a)$; $E^b \gets \text{edges}(G^b)$
+\State $V^c \gets V^a \cup V^b$; $E^c \gets \emptyset$ \Comment{Initialize vertices and edges for the merged graph}
+% \State $m \gets \dots$ % Now passed as input parameter
 
-\For{$v^* \in V^a$}
-    \State $\mathcal{C}^b \gets \textsc{HNSW-Search}(\mathcal{H} = \mathcal{H}^b, q = v^*, v_0, k = m, L = \text{search\_ef}, \ell)$
-    \State $\mathcal{C} \gets \{v : (v^*, v) \in E^a \} \cup \mathcal{C}^b$
-    \State $E^c \gets E^c \cup \{(v^*, v) : v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$
+\For{$v^* \in V^a$} \Comment{Process vertices from graph A}
+    \State $\mathcal{C}^b \gets \textsc{HNSW-Search}(\mathcal{H}=\mathcal{H}_b, q=v^*, v_{entry}=v_{entry}^b, k=m, L=\text{search\_ef}, \ell=\ell)$ \Comment{Find candidates in B}
+    \State $\mathcal{C} \gets \{v \mid (v^*, v) \in E^a \} \cup \mathcal{C}^b$  \Comment{Combine original neighbors and candidates from B}
+    \State $E^c \gets E^c \cup \{(v^*, v) | v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$\Comment{Add new neighborhood to set of edges}
 \EndFor
 
-\For{$v^* \in V^b$}
-    \State $\mathcal{C}^a \gets \textsc{HNSW-Search}(\mathcal{H} = \mathcal{H}^a, q = v^*, v_0, k = m, L = \text{search\_ef}, \ell)$
-    \State $\mathcal{C} \gets \{v : (v^*, v) \in E^b \} \cup \mathcal{C}^a$
-    \State $E^c \gets E^c \cup \{(v^*, v) : v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$
+\For{$v^* \in V^b$} \Comment{Process vertices from graph B}
+    \State $\mathcal{C}^a \gets \textsc{HNSW-Search}(\mathcal{H}=\mathcal{H}_a, q=v^*, v_{entry}=v_{entry}^a, k=m, L=\text{search\_ef}, \ell_{target}=\ell)$ \Comment{Find candidates in A}
+    \State $\mathcal{C} \gets \{v \mid (v^*, v) \in E^b \} \cup \mathcal{C}^a$  \Comment{Combine original neighbors and candidates from A}
+    \State $E^c \gets E^c \cup \{(v^*, v) | v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$\Comment{Add new neighborhood to set of edges}
 \EndFor
 
 \State \Return $G^c = (V^c, E^c)$
 \end{algorithmic}
 \end{algorithm}
+
+
+This naive approach is simple but computationally intensive due to repeated \textsc{HNSW-Search} calls, each potentially traversing multiple layers from the top down.
+
 
 \subsection{Merge1}
 The most effort of \textsc{Merge-Naive} algorithm lies in the set of neighborhood candidates from the opposite graph utilising \textsc{HNSW-Search} procedure, that traverses layers graph from the top-level down to layer number $\ell$ every time. The number of computations can be reduced if we select the next vertex $v^*$ close to the previous one (line 15), instead of choosing it randomly. Thus, for new $v^*$ the neighborhood candidates will be  also close to the previous candidates set. To search this new neighborhood candidates we can use \textsc{LocalSearch} procedure, that traversing the same graph staring from the previous neighborhood candidates set $\mathcal{P}^b$ (line 11,14). In the line 14 in set $\mathcal{P}^b$ we keep only $M$-closest to $v^*$ candidates.\\
@@ -186,10 +207,10 @@ After we have processed all vertices from the the graph $G^a$. We do the same fo
 \textbf{Require:} The HNSW graphs $\mathcal{H}_a = (G^a_i), \mathcal{H}_b = (G^b_i)$, the merging layer number $\ell$, the size of the forming neighborhoods $m \in \mathbb{N}$, parameters $\text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k} \in \mathbb{N}$ \\
 \textbf{Ensure:}  Merged graph $G^c$ 
 \begin{algorithmic}[1]
-\State $V^c \gets V^a \cup V^b$
-\State $E^c \gets \emptyset$
-\State $G^a \gets G^a_{\ell} $
-\State $G^b \gets G^b_{\ell} $
+\State $G^a \gets \mathcal{H}_a\text{.GetLayer}(\ell) $; $G^b \gets\mathcal{H}_a\text{.GetLayer}(\ell)$ 
+\State $V^a \gets \text{vertices}(G^a)$; $V^b \gets \text{vertices}(G^b)$
+\State $E^a \gets \text{edges}(G^a)$; $E^b \gets \text{edges}(G^b)$
+\State $V^c \gets V^a \cup V^b$; $E^c \gets \emptyset$ 
 \State $\mathcal{V}_{not\_done} \gets V^a$
 
 \While{$\mathcal{V}_{not\_done} \neq \emptyset$}
@@ -235,18 +256,19 @@ After we have processed all vertices from the the graph $G^a$. We do the same fo
 
 \subsection{Merge2}
 
-\textsc{Merge2} algorithm is similar to \textsc{Merge1} utilise \textsc{LocalSearch} procedure to reduce computation effort. The difference is that \textsc{Merge1} algorithm the next $v^*$ vertex choice from the same graph, while \textsc{Merge2} looks for new vertex $v^*$ in the both graphs $G^a$, and $G^b$. Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which of not processed vertex from the both graph (line 21). The intuition laying behind \textsc{Merge2} algorithm is that allowing to choice new $v^*$ from the both graphs, we reduce the number of times what $v^*$ is chosen randomly, thereby minimise the number of using more expensive search procedure \textsc{HNSW-Search}.
+\textsc{Merge2} algorithm is similar to \textsc{Merge1} utilise \textsc{LocalSearch} procedure to reduce computation effort. The difference is that \textsc{Merge1} algorithm the next $v^*$ vertex choice from the same graph, while \textsc{Merge2} looks for new vertex $v^*$ in the both graphs $G^a$, and $G^b$. 
+Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which of not processed vertex from the both graph (line 21). The intuition laying behind \textsc{Merge2} algorithm is that allowing to choice new $v^*$ from the both graphs, we reduce the number of times what $v^*$ is chosen randomly, thereby minimise the number of using more expensive search procedure \textsc{HNSW-Search}.
 
 \begin{algorithm}
-\caption{\textsc{Merge2}($\mathcal{H}^a, \mathcal{H}^b,  \ell, \text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M, m$)}\label{alg:merge2}
-\textbf{Require:} The HNSW graphs $\mathcal{H}_a = (G^a_i), \mathcal{H}_b = (G^b_i)$, the number of merged layers, the size of the forming neighborhoods $m \in \mathbb{N} $, parameters $\text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M \in \mathbb{N}$ \\
-\textbf{Ensure:}  Merged graph $G^c$ 
+    \caption{\textsc{Merge2}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M, m$)}\label{alg:merge2}
+    \textbf{Require:} The HNSW graphs $\mathcal{H}_a = (G^a_i)$, $\mathcal{H}_b = (G^b_i)$, the merging layer $\ell$, parameters $\text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k} \in \mathbb{N}$, neighborhood sizes $M, m \in \mathbb{N}$ \\
+    \textbf{Ensure:} Merged graph $G^c$ 
 \begin{algorithmic}[1]
 
-\State $V^c \gets V^a \cup V^b$
-\State $E^c \gets \emptyset$
-\State $G^a \gets G^a_{\ell} $
-\State $G^b \gets G^b_{\ell} $
+\State $G^a \gets \mathcal{H}_a\text{.GetLayer}(\ell) $; $G^b \gets\mathcal{H}_a\text{.GetLayer}(\ell)$ 
+\State $V^a \gets \text{vertices}(G^a)$; $V^b \gets \text{vertices}(G^b)$
+\State $E^a \gets \text{edges}(G^a)$; $E^b \gets \text{edges}(G^b)$
+\State $V^c \gets V^a \cup V^b$; $E^c \gets \emptyset$
 % \State $m \gets \mathcal{H}_a.m_0 \text{ if } \ell = 0 \text{ else } \mathcal{H}_a.m$
 \State $\mathcal{V}_{not\_done} \gets V^a \cup V^b$
 
@@ -296,7 +318,7 @@ After we have processed all vertices from the the graph $G^a$. We do the same fo
 
 
 \end{algorithmic}
-\end{algorithm}
+    \end{algorithm}
 
 \section{Computational Experiments}
 We implemented proposed algorithms using python. For experiments we use Sift1m dataset divided into two subset of 500k vectors at each. Our algorithm merge that two subsets of 500k vectors. In order to be independent of the implementation details and low level optimisation, we do comparison of the algorithms based on the number of distance computation during the merge process. \ref{fig:sfig1} shows that \textsc{Merge1} about 5 times less computations than naive algorithm. Surprisingly \textsc{Merge2} algorithm do slightly more computations than \textsc{Merge1}, nevertheless it significantly outperform \textsc{merge-naive} algorithm.\\
