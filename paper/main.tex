@@ -82,7 +82,7 @@ The parameter $L$ controls the breadth of the search and helps avoid getting tra
 
 \section{Neighborhood Construction Strategies}
 
-Various strategies exist for selecting a node's neighborhood. Our merging algorithms are agnostic to the specific neighborhood construction method, which can be provided as a parameter.
+Various strategies exist for selecting a node's neighborhood. Our merging algorithms are agnostic to the specific neighborhood construction method, which can be provided as a parameter. Here below Algorithm~\ref{alg:knntrategy} and Algorithm~\ref{alg:rngstrategy} are example of possible neighborhood construction functions. 
 
 \begin{algorithm}
 \caption{\textsc{KNN-Neighborhood-Construction}($v^*, C, k$)}\label{alg:knntrategy}
@@ -119,6 +119,8 @@ Various strategies exist for selecting a node's neighborhood. Our merging algori
 \State \Return $C'$
 \end{algorithmic}
 \end{algorithm}
+
+\textsc{KNN-Neighborhood-Construction}(Algorithm~\ref{alg:knntrategy}) is a simplest way to form neighbors, while \textsc{RNG-Neighborhood-Construction} (Algorithm~\ref{alg:rngstrategy}) is more advanced, that paratactically provides better navigability property.  
 
 \section{Merge Algorithms}
 
