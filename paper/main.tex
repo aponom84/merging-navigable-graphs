@@ -30,11 +30,11 @@
 \section{Introduction}
 Navigable small-world graphs have emerged as a cornerstone for efficient approximate nearest neighbor (ANN) search in high-dimensional spaces. This problem is crucial in fields such as recommendation systems, image retrieval, and natural language processing. Algorithms like Hierarchical Navigable Small World (HNSW) \cite{hnsw} and its predecessor Navigable Small World (NSW) \cite{nsw2011,nsw2012,nsw2014} provide robust and scalable frameworks for organizing data into graph structures that support fast similarity searches.
 
-One key limitation of these methods is the absence of a natural mechanism for node deletion, which is essential as datasets evolve and obsolete items accumulate. This necessitates merging and compacting graphs to maintain efficiency and accuracy in the search index over time.
+One of the key challenges in maintaining these graph-based indices is efficiently combining data from multiple sources. As datasets grow and evolve, it becomes necessary to merge separate graph structures while preserving their navigability properties. This is particularly important in distributed systems where indices are built independently and later consolidated, or when integrating new batches of data with existing indices.
 
-While HNSW supports dynamic insertions, it lacks native support for deletions. As a result, merging becomes a form of "compaction," where graphs from two or more sources are combined, and nodes marked for deletion are omitted. This not only improves space efficiency but also enhances search quality by reducing noise from irrelevant entries.
+While HNSW supports dynamic insertions, merging entire graphs as coherent structures presents a different challenge. The quality of the merged graph directly impacts search performance, and naive approaches may lead to suboptimal neighborhood connections or excessive computational costs during the merge operation.
 
-In this work, we propose three novel algorithms—\textbf{Naive Merge}, \textbf{Merge1}, and \textbf{Merge2}—for efficiently merging navigable graphs. While our methods primarily target HNSW, they are generalizable to other graph-based data structures such as NSW \cite{nsw2011} and NSG \cite{NSG}. These algorithms preserve graph navigability and ensure that deleted nodes are excluded from the merged result, maintaining the structural integrity necessary for fast ANN search.
+In this work, we propose three novel algorithms—\textbf{Naive Merge}, \textbf{Merge1}, and \textbf{Merge2}—for efficiently merging navigable graphs. While our methods primarily target HNSW, they are generalizable to other graph-based data structures such as NSW \cite{nsw2011} and NSG \cite{NSG}. These algorithms preserve graph navigability and maintain the structural integrity necessary for fast ANN search while offering different trade-offs between merge accuracy and computational efficiency.
 
 \section{Search}
 
