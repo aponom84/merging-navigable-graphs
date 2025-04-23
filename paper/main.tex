@@ -204,8 +204,8 @@ After we have processed all vertices from the the graph $G^a$. We do the same fo
 
 \begin{algorithm}
 \caption{\textsc{Merge1}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M, m$)}\label{alg:merge1}
-\textbf{Require:} The HNSW graphs $\mathcal{H}_a = (G^a_i), \mathcal{H}_b = (G^b_i)$, the merging layer number $\ell$, the size of the forming neighborhoods $m \in \mathbb{N}$, parameters $\text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k} \in \mathbb{N}$ \\
-\textbf{Ensure:}  Merged graph $G^c$ 
+\textbf{Input:} The HNSW graphs $\mathcal{H}_a = (G^a_i), \mathcal{H}_b = (G^b_i)$, the merging layer number $\ell$, the size of the forming neighborhoods $m \in \mathbb{N}$, parameters $\text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k} \in \mathbb{N}$ \\
+\textbf{Output:}  Merged graph $G^c$ 
 \begin{algorithmic}[1]
 \State $G^a \gets \mathcal{H}_a\text{.GetLayer}(\ell) $; $G^b \gets\mathcal{H}_a\text{.GetLayer}(\ell)$ 
 \State $V^a \gets \text{vertices}(G^a)$; $V^b \gets \text{vertices}(G^b)$
@@ -261,8 +261,8 @@ Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which 
 
 \begin{algorithm}
     \caption{\textsc{Merge2}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M, m$)}\label{alg:merge2}
-    \textbf{Require:} The HNSW graphs $\mathcal{H}_a = (G^a_i)$, $\mathcal{H}_b = (G^b_i)$, the merging layer $\ell$, parameters $\text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k} \in \mathbb{N}$, neighborhood sizes $M, m \in \mathbb{N}$ \\
-    \textbf{Ensure:} Merged graph $G^c$ 
+    \textbf{Input:} The HNSW graphs $\mathcal{H}_a = (G^a_i)$, $\mathcal{H}_b = (G^b_i)$, the merging layer $\ell$, parameters $\text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k} \in \mathbb{N}$, neighborhood sizes $M, m \in \mathbb{N}$ \\
+    \textbf{Output:} Merged graph $G^c$ 
 \begin{algorithmic}[1]
 
 \State $G^a \gets \mathcal{H}_a\text{.GetLayer}(\ell) $; $G^b \gets\mathcal{H}_a\text{.GetLayer}(\ell)$ 
@@ -346,10 +346,6 @@ Our results show that \textsc{Merge1} and \textsc{Merge2} significantly reduce t
 - \textsc{Merge1} strikes a balance between efficiency and accuracy, achieving comparable recall with roughly 40–60\% fewer computations.
 - \textsc{Merge2} provides the best runtime performance, reducing distance computations by up to 70\% while maintaining high recall in most cases.
 
-These results demonstrate the practical benefit of incorporating approximate search into the merge process, allowing efficient index compaction without significant degradation in search quality.
-
-
-
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
   \centering
@@ -367,6 +363,20 @@ These results demonstrate the practical benefit of incorporating approximate sea
 \label{fig:fig}
 \end{figure}
 
+These results demonstrate the practical benefit of incorporating approximate search into the merge process, allowing efficient index compaction without significant degradation in search quality.
+
+
+
+
+
+
+\section{Conclusion}
+
+We have introduced three algorithms for merging navigable graphs, particularly in the context of HNSW structures. The simplest, \textsc{Merge-Naive}, combines neighborhoods from both graphs independently, making it easy to implement but computationally expensive. The two improved methods, \textsc{Merge1} and \textsc{Merge2}, reduce the computational cost by employing localized searches and leveraging spatial continuity between processed vertices.
+
+These merge strategies enable efficient data compaction and support for deletion in static graph-based indexes, offering significant utility in real-world ANN applications where data changes over time.
+
+Future work includes applying these algorithms in dynamic and streaming settings, analyzing performance on diverse real-world datasets, and exploring further optimization of neighborhood construction and traversal strategies.
 
 
 
