@@ -102,9 +102,7 @@ The parameters $k$, $L$, and the choice of entry point $v_0$ collectively influe
 
 Both search algorithms are fundamental not only for answering queries but also for the merge operations described in subsequent sections, as they provide the mechanism for identifying candidate neighbors when reconstructing connections in the merged graph.
 
-
 \section{Neighborhood Construction Strategies}
-Various strategies exist for selecting a node's neighborhood. Our merging algorithms are agnostic to the specific neighborhood construction method, which can be provided as a parameter. Here below Algorithm~\ref{alg:knntrategy} and Algorithm~\ref{alg:rngstrategy} are example of possible neighborhood construction functions. 
 
 \begin{algorithm}
 \caption{\textsc{KNN-Neighborhood-Construction}($v^*, C, k$)}\label{alg:knntrategy}
@@ -115,6 +113,14 @@ Various strategies exist for selecting a node's neighborhood. Our merging algori
 \State \Return $C'$
 \end{algorithmic}
 \end{algorithm}
+
+Various strategies exist for selecting a node's neighborhood in navigable small-world graphs. Our merging algorithms are designed to be agnostic to the specific neighborhood construction method, which can be provided as a parameter. We present two representative strategies below.
+
+The \textsc{KNN-Neighborhood-Construction} algorithm (Algorithm~\ref{alg:knntrategy}) implements the simplest approach, where a vertex's neighborhood consists of its $k$ nearest neighbors from the candidate set. This strategy prioritizes proximity but may not optimize for graph navigability properties.
+
+In contrast, the \textsc{RNG-Neighborhood-Construction} algorithm (Algorithm~\ref{alg:rngstrategy}) implements a more sophisticated approach based on relative neighborhood graph principles. It processes candidates in ascending order of distance to the target vertex $v^*$. For each candidate $v$, it checks whether $v$ is closer to $v^*$ than to any previously selected neighbor $w$. This pruning condition helps create better-connected graphs with improved navigability by ensuring that edges span different directions in the vector space rather than clustering in the same region. The algorithm limits the neighborhood size to at most $m$ vertices to control graph density.
+
+The choice of neighborhood construction strategy significantly impacts both search performance and the computational cost of index maintenance operations, including merges. While \textsc{KNN-Neighborhood-Construction} is computationally simpler, \textsc{RNG-Neighborhood-Construction} typically produces graphs with better search performance at the expense of more complex neighborhood formation.
 
 \begin{algorithm}
 \caption{\textsc{RNG-Neighborhood-Construction}($v^*, C, m$)}\label{alg:rngstrategy}
@@ -142,10 +148,8 @@ Various strategies exist for selecting a node's neighborhood. Our merging algori
 \end{algorithmic}
 \end{algorithm}
 
-\textsc{KNN-Neighborhood-Construction}(Algorithm~\ref{alg:knntrategy}) is a simplest way to form neighbors, while \textsc{RNG-Neighborhood-Construction} (Algorithm~\ref{alg:rngstrategy}) is more advanced, that paratactically provides better navigability property.  
-
+% \textsc{KNN-Neighborhood-Construction}(Algorithm~\ref{alg:knntrategy}) is a simplest way to form neighbors, while \textsc{RNG-Neighborhood-Construction} (Algorithm~\ref{alg:rngstrategy}) is more advanced, that paratactically provides better navigability property.  
 \section{Merge Algorithms}
-
 
 %We provide 3 merge algorithms: "Naive Merge", "Merge1", and "Merge2". We also refer to these algorithm as layer-merge algorithms. "Naive Merge" is a straight forward method, while "Merge1" and "Merge2" are more advanced. Together, these two algorithms constitute the main contribution of the work. The HNSW structure is a sequence of graphs, called layers. We start from description of a general algorithm for merging multi layers structure.
 We now present three algorithms for merging HNSW graphs: \textsc{Merge-Naive}, \textsc{Merge1}, and \textsc{Merge2}. These algorithms operate layer by layer. We first describe the general procedure for merging the multi-layer HNSW structure, followed by the specific logic for merging a single layer (\textit{layer-merge algorithms}).
@@ -174,6 +178,7 @@ Let $l_{\max}^a$ and $l_{\max}^b$ be the maximum layer indices for $\mathcal{H}_
 \end{algorithm}
 
 Note that the merging of different layers (iterations of the loop in Algorithm~\ref{alg:general_merge}) is independent and can potentially be parallelized.
+
 
 
 %\subsection{Naive Merge}
