@@ -176,18 +176,21 @@ Let $l_{\max}^a$ and $l_{\max}^b$ be the maximum layer indices for $\mathcal{H}_
 Note that the merging of different layers (iterations of the loop in Algorithm~\ref{alg:general_merge}) is independent and can potentially be parallelized.
 
 
-
 %\subsection{Naive Merge}
 %The Naive Merge algorithm \ref{alg:merge_naive} surprisingly is very simple. It takes one vertex $v^*$ by one from the graph $G^a$. Then algorithm prepares the candidate set $\mathcal{C}$ for a new neighborhood (lines 6,7). It uses \textsc{HNSW-Search} to get $m$-closest vertices to $v^*$ in the graph $G^b$, and combines with an old neighborhood of the vertex $v^*$. After that in the line 8 the candidate set $\mathcal{C}$ is passed into the neighborhood construction function, which selects the vertices for the new merged neighborhood for $v^*$.
 %Lines 9-12 contains the same logic for the forming new neighborhoods of graph $G^b$
 
 \subsection{Naive Merge}
-The \textsc{Merge-Naive} algorithm (Algorithm~\ref{alg:merge_naive}) provides a straightforward method for merging a single layer $\ell$. For each vertex $v^*$ originating from graph $G^a_\ell$, it searches for its potential neighbors in graph $G^b_\ell$ using the full \textsc{HNSW-Search} procedure down to layer $\ell$. These candidates are combined with the original neighbors of $v^*$ in $G^a_\ell$. The final neighborhood for $v^*$ in the merged graph $G^c_\ell$ is selected from this combined set using the chosen \textsc{NeighborhoodConstruction} strategy. The process is repeated for vertices originating from $G^b_\ell$.
+The \textsc{Merge-Naive} algorithm (Algorithm~\ref{alg:merge_naive}) provides a straightforward method for merging a single layer $\ell$. The algorithm begins by extracting the target layers from both input HNSW structures and initializing the merged graph's vertex set as the union of vertices from both input graphs (lines 1-4).
 
+For each vertex $v^*$ in graph $G^a_\ell$ (line 5), the algorithm:
+1. Searches for potential neighbors in graph $G^b_\ell$ using \textsc{HNSW-Search} (line 6)
+2. Combines these candidates with $v^*$'s original neighbors from $G^a_\ell$ (line 7)
+3. Selects the final neighborhood for $v^*$ using the specified \textsc{NeighborhoodConstruction} strategy and adds the corresponding edges to $E^c$ (line 8)
 
+The process is then repeated for all vertices from graph $G^b_\ell$ (lines 9-12), searching for their potential neighbors in $G^a_\ell$.
 
-
-
+This approach ensures that each vertex in the merged graph has an appropriate neighborhood that incorporates information from both input graphs. However, it is computationally intensive due to repeated \textsc{HNSW-Search} calls that traverse multiple layers for each vertex.
 
 \begin{algorithm}
 \caption{\textsc{Merge-Naive}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{NeighborhoodConstruction}, m, \text{search\_ef}, v_{entry}$)}\label{alg:merge_naive}
@@ -197,28 +200,24 @@ The \textsc{Merge-Naive} algorithm (Algorithm~\ref{alg:merge_naive}) provides a 
 \State $G^a \gets \mathcal{H}_a\text{.GetLayer}(\ell) $; $G^b \gets\mathcal{H}_a\text{.GetLayer}(\ell)$ 
 \State $V^a \gets \text{vertices}(G^a)$; $V^b \gets \text{vertices}(G^b)$
 \State $E^a \gets \text{edges}(G^a)$; $E^b \gets \text{edges}(G^b)$
-\State $V^c \gets V^a \cup V^b$; $E^c \gets \emptyset$ \Comment{Initialize vertices and edges for the merged graph}
+\State $V^c \gets V^a \cup V^b$; $E^c \gets \emptyset$ 
 % \State $m \gets \dots$ % Now passed as input parameter
 
-\For{$v^* \in V^a$} \Comment{Process vertices from graph A}
-    \State $\mathcal{C}^b \gets \textsc{HNSW-Search}(\mathcal{H}=\mathcal{H}_b, q=v^*, v_{entry}=v_{entry}^b, k=m, L=\text{search\_ef}, \ell=\ell)$ \Comment{Find candidates in B}
-    \State $\mathcal{C} \gets \{v \mid (v^*, v) \in E^a \} \cup \mathcal{C}^b$  \Comment{Combine original neighbors and candidates from B}
-    \State $E^c \gets E^c \cup \{(v^*, v) | v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$\Comment{Add new neighborhood to set of edges}
+\For{$v^* \in V^a$} 
+    \State $\mathcal{C}^b \gets \textsc{HNSW-Search}(\mathcal{H}=\mathcal{H}_b, q=v^*, v_{entry}=v_{entry}^b, k=m, L=\text{search\_ef}, \ell=\ell)$ 
+    \State $\mathcal{C} \gets \{v \mid (v^*, v) \in E^a \} \cup \mathcal{C}^b$  
+    \State $E^c \gets E^c \cup \{(v^*, v) | v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$
 \EndFor
 
-\For{$v^* \in V^b$} \Comment{Process vertices from graph B}
-    \State $\mathcal{C}^a \gets \textsc{HNSW-Search}(\mathcal{H}=\mathcal{H}_a, q=v^*, v_{entry}=v_{entry}^a, k=m, L=\text{search\_ef}, \ell_{target}=\ell)$ \Comment{Find candidates in A}
-    \State $\mathcal{C} \gets \{v \mid (v^*, v) \in E^b \} \cup \mathcal{C}^a$  \Comment{Combine original neighbors and candidates from A}
-    \State $E^c \gets E^c \cup \{(v^*, v) | v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$\Comment{Add new neighborhood to set of edges}
+\For{$v^* \in V^b$} 
+    \State $\mathcal{C}^a \gets \textsc{HNSW-Search}(\mathcal{H}=\mathcal{H}_a, q=v^*, v_{entry}=v_{entry}^a, k=m, L=\text{search\_ef}, \ell_{target}=\ell)$ 
+    \State $\mathcal{C} \gets \{v \mid (v^*, v) \in E^b \} \cup \mathcal{C}^a$  
+    \State $E^c \gets E^c \cup \{(v^*, v) | v \in \textsc{neighborhood\_construction}(\mathcal{C}, v^*, m)\}$
 \EndFor
 
 \State \Return $G^c = (V^c, E^c)$
 \end{algorithmic}
 \end{algorithm}
-
-
-This naive approach is simple but computationally intensive due to repeated \textsc{HNSW-Search} calls, each potentially traversing multiple layers from the top down.
-
 
 \subsection{Merge1}
 The most effort of \textsc{Merge-Naive} algorithm lies in the set of neighborhood candidates from the opposite graph utilising \textsc{HNSW-Search} procedure, that traverses layers graph from the top-level down to layer number $\ell$ every time. The number of computations can be reduced if we select the next vertex $v^*$ close to the previous one (line 15), instead of choosing it randomly. Thus, for new $v^*$ the neighborhood candidates will be  also close to the previous candidates set. To search this new neighborhood candidates we can use \textsc{LocalSearch} procedure, that traversing the same graph staring from the previous neighborhood candidates set $\mathcal{P}^b$ (line 11,14). In the line 14 in set $\mathcal{P}^b$ we keep only $M$-closest to $v^*$ candidates.\\
