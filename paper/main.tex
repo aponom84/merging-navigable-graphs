@@ -38,7 +38,9 @@ In this work, we propose three novel algorithms—\textbf{Naive Merge}, \textbf{
 
 \section{Search}
 
-We begin by describing basic search operations over a single graph.
+The search process in navigable small-world graphs is a critical operation that underlies both query processing and the graph construction phase. Below, we describe two key search algorithms: \textsc{LocalSearch} for exploring a single graph layer, and \textsc{HNSW-Search} for hierarchical multi-layer traversal.
+
+\subsection{Local Search}
 
 \begin{algorithm}
 \caption{\textsc{LocalSearch}($G, q, C, k, L$)}\label{alg:local_search}
@@ -65,7 +67,15 @@ We begin by describing basic search operations over a single graph.
 \end{algorithmic}
 \end{algorithm}
 
-The parameter $L$ controls the breadth of the search and helps avoid getting trapped in local minima. In the HNSW paper, it is referred to as the \textbf{ef} (expansion factor) parameter.
+The \textsc{LocalSearch} algorithm (Algorithm~\ref{alg:local_search}) implements a greedy search within a single graph layer. Starting with an initial candidate set $C$, it iteratively explores the neighborhood of the closest unvisited point to the query $q$. This exploration strategy balances depth-first search for quick convergence toward the target region with breadth-first search for escaping local minima.
+
+For each iteration, \textsc{LocalSearch} selects the nearest unvisited point $u$ to the query and explores its immediate neighbors. These neighbors are added to the candidate set if they have not been visited previously. The candidate set is constrained to size $L$ (the expansion factor) by retaining only the $L$ points closest to the query. This pruning step is crucial for efficient search by focusing computational resources on the most promising candidates.
+
+The search terminates when no additional updates to the candidate set occur during an iteration, indicating convergence. The algorithm then returns the $k$ nearest points to the query from the final candidate set, which represents the approximate $k$-nearest neighbors of the query within the graph structure.
+
+The parameter $L$ provides a direct trade-off between search quality and computational cost. Larger values of $L$ allow for broader exploration, potentially escaping local minima and finding better global solutions, but at the expense of increased computation time. In the HNSW paper, parameter $L$ named as \textbf{ef} (expansion factor) parameter.
+
+\subsection{Hierarchical Search}
 
 \begin{algorithm}
 \caption{\textsc{HNSW-Search}($\mathcal{H}, q, v_0, k, L, \ell$)}\label{alg:hnsw_search}
@@ -80,8 +90,20 @@ The parameter $L$ controls the breadth of the search and helps avoid getting tra
 \end{algorithmic}
 \end{algorithm}
 
-\section{Neighborhood Construction Strategies}
+The \textsc{HNSW-Search} algorithm (Algorithm~\ref{alg:hnsw_search}) leverages the hierarchical structure of HNSW to efficiently navigate through the vector space. Search begins at the highest layer $l_{\max}$ of the HNSW structure with a single entry point $v_0$. At each layer, \textsc{LocalSearch} is used to find the best approximation of the nearest neighbor to the query within that layer.
 
+The algorithm traverses from the highest layer down to the target layer $\ell$, using the result from each layer as the entry point for the next lower layer. This coarse-to-fine approach allows the search to quickly focus on the relevant region of the vector space at higher, sparser layers before refining the search in the more densely connected lower layers.
+
+At each layer $i$ (from $l_{\max}$ down to $\ell+1$), \textsc{LocalSearch} is executed with $k=1$ to find a single nearest neighbor to the query. This single neighbor serves as the entry point for the subsequent layer. At the target layer $\ell$, a final \textsc{LocalSearch} is performed with the specified $k$ value to retrieve the $k$ nearest neighbors.
+
+This hierarchical search significantly reduces the number of distance computations compared to a flat graph search, especially for large-scale datasets. The efficiency comes from the progressive narrowing of the search space as the algorithm moves down through the layers, focusing the search on increasingly relevant regions.
+
+The parameters $k$, $L$, and the choice of entry point $v_0$ collectively influence the search quality and efficiency. Typically, $v_0$ is selected as the entry point at the highest layer of the HNSW structure, though any vertex in the graph can theoretically serve as the starting point.
+
+Both search algorithms are fundamental not only for answering queries but also for the merge operations described in subsequent sections, as they provide the mechanism for identifying candidate neighbors when reconstructing connections in the merged graph.
+
+
+\section{Neighborhood Construction Strategies}
 Various strategies exist for selecting a node's neighborhood. Our merging algorithms are agnostic to the specific neighborhood construction method, which can be provided as a parameter. Here below Algorithm~\ref{alg:knntrategy} and Algorithm~\ref{alg:rngstrategy} are example of possible neighborhood construction functions. 
 
 \begin{algorithm}
