@@ -393,18 +393,20 @@ Our results show that \textsc{Merge1} and \textsc{Merge2} significantly reduce t
 
 These results demonstrate the practical benefit of incorporating approximate search into the merge process, allowing efficient index compaction without significant degradation in search quality.
 
-
-
-
-
-
 \section{Conclusion}
 
-We have introduced three algorithms for merging navigable graphs, particularly in the context of HNSW structures. The simplest, \textsc{Merge-Naive}, combines neighborhoods from both graphs independently, making it easy to implement but computationally expensive. The two improved methods, \textsc{Merge1} and \textsc{Merge2}, reduce the computational cost by employing localized searches and leveraging spatial continuity between processed vertices.
+In this work, we introduced three algorithms for merging navigable small-world graphs: \textsc{Merge-Naive} (Algorithm~\ref{alg:merge_naive}), \textsc{Merge1} (Algorithm~\ref{alg:merge1}), and \textsc{Merge2} (Algorithm~\ref{alg:merge2}). Each algorithm offers different trade-offs between computational efficiency and the quality of the merged graph structure. Our experimental results demonstrate that \textsc{Merge1} and \textsc{Merge2} significantly reduce the number of distance computations compared to the naive approach while maintaining comparable search accuracy.
 
-These merge strategies enable efficient data compaction and support for deletion in static graph-based indexes, offering significant utility in real-world ANN applications where data changes over time.
+The \textsc{Merge-Naive} algorithm provides a straightforward but computationally intensive approach, performing exhaustive searches to reconstruct each vertex's neighborhood. \textsc{Merge1} improves efficiency by leveraging locality—processing vertices close to each other sequentially and reusing search results from \textsc{LocalSearch} (Algorithm~\ref{alg:local_search}). \textsc{Merge2} further enhances this approach by selecting vertices from both input graphs during the merge process, minimizing expensive random jumps.
 
-Future work includes applying these algorithms in dynamic and streaming settings, analyzing performance on diverse real-world datasets, and exploring further optimization of neighborhood construction and traversal strategies.
+Our evaluation across standard ANN benchmark datasets shows that \textsc{Merge1} reduces distance computations by 40-60\% compared to \textsc{Merge-Naive}, while \textsc{Merge2} achieves up to 70\% reduction with minimal impact on recall performance. These efficiency gains make our algorithms particularly valuable for large-scale applications where computational resources are limited.
+
+\subsection{Future Work}
+
+An important direction for future work is adapting the proposed merge algorithms to handle deleted vertices. This would enable their use in compaction processes, where graphs are periodically restructured to remove obsolete entries and maintain search efficiency. By extending our merge algorithms to filter out deleted nodes during the neighborhood construction phase (Algorithm~\ref{alg:knntrategy} or Algorithm~\ref{alg:rngstrategy}), they could serve as effective compaction mechanisms for evolving datasets.
+
+Additional areas for exploration include parallelization strategies for the \textsc{HNSW-General-Merge} operation (Algorithm~\ref{alg:general_merge}), adaptive parameter selection based on dataset characteristics, and extensions to other graph-based index structures beyond HNSW \cite{hnsw}. Further optimization of the neighborhood construction strategies specifically tailored for merged graphs could also yield performance improvements.
+
 
 
 
