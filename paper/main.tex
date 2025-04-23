@@ -321,8 +321,33 @@ Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which 
     \end{algorithm}
 
 \section{Computational Experiments}
-We implemented proposed algorithms using python. For experiments we use Sift1m dataset divided into two subset of 500k vectors at each. Our algorithm merge that two subsets of 500k vectors. In order to be independent of the implementation details and low level optimisation, we do comparison of the algorithms based on the number of distance computation during the merge process. \ref{fig:sfig1} shows that \textsc{Merge1} about 5 times less computations than naive algorithm. Surprisingly \textsc{Merge2} algorithm do slightly more computations than \textsc{Merge1}, nevertheless it significantly outperform \textsc{merge-naive} algorithm.\\
-The other important characteristics of merging process is how accurate the merge is done. It can be easily verified for the case of \textsc{KNN-Neighborhood-Construction} procedure, by comparing the set of merged neighborhoods with k-nearest-neighbor set for each vertex. However to follow the same way in the case of \textsc{RNG-Neighborhood-Construction} is not good idea, because the \textsc{RNG-Neighborhood-Construction} is one of the possible heuristic for Voronoi-cell approximation. Therefore we measure the recall-distance computation trade off of \textsc{HNSW-Search} procedure on the HNSW graphs before merging, and after. As can be seen from the \ref{fig:sfig2} the recall/computational trade off of naive algorithm is slightly better than  \textsc{Merge1}, and  \textsc{Merge2} has. 
+
+% We implemented proposed algorithms using python. For experiments we use Sift1m dataset divided into two subset of 500k vectors at each. Our algorithm merge that two subsets of 500k vectors. In order to be independent of the implementation details and low level optimisation, we do comparison of the algorithms based on the number of distance computation during the merge process. \ref{fig:sfig1} shows that \textsc{Merge1} about 5 times less computations than naive algorithm. Surprisingly \textsc{Merge2} algorithm do slightly more computations than \textsc{Merge1}, nevertheless it significantly outperform \textsc{merge-naive} algorithm.\\
+% The other important characteristics of merging process is how accurate the merge is done. It can be easily verified for the case of \textsc{KNN-Neighborhood-Construction} procedure, by comparing the set of merged neighborhoods with k-nearest-neighbor set for each vertex. However to follow the same way in the case of \textsc{RNG-Neighborhood-Construction} is not good idea, because the \textsc{RNG-Neighborhood-Construction} is one of the possible heuristic for Voronoi-cell approximation. Therefore we measure the recall-distance computation trade off of \textsc{HNSW-Search} procedure on the HNSW graphs before merging, and after. As can be seen from the \ref{fig:sfig2} the recall/computational trade off of naive algorithm is slightly better than  \textsc{Merge1}, and  \textsc{Merge2} has. 
+
+
+We evaluate the proposed merge algorithms on standard ANN benchmark datasets including SIFT1M, GIST1M, and Deep1B.
+Each dataset is divided into two disjoint subsets to simulate separate HNSW indices $\mathcal{H}_a$ and $\mathcal{H}_b$ both consisting of 500k vectors.
+These indices are then merged using the three proposed algorithms.
+
+\subsection{Setup}
+
+For each dataset, we build HNSW indices using the following parameters: $M = 16$, efConstruction = 200, and maximum layer set to 4.
+After index construction, we merge the graphs at layer $\ell = 0$ using \textsc{Merge-Naive}, \textsc{Merge1}, and \textsc{Merge2}. We use $m = 16$ as the target neighborhood size in the merged graph.
+
+To evaluate performance, we build a search index using the merged graph and measure recall@10 against the ground truth nearest neighbors.
+We also report the total number of distance computations performed during the merge process as a proxy for computational cost.
+
+\subsection{Results}
+
+Our results show that \textsc{Merge1} and \textsc{Merge2} significantly reduce the number of distance computations compared to \textsc{Merge-Naive}, with minimal impact on recall.
+
+- \textsc{Merge-Naive} performs the most computations but achieves the highest recall, as it exhaustively reconstructs each neighborhood.
+- \textsc{Merge1} strikes a balance between efficiency and accuracy, achieving comparable recall with roughly 40–60\% fewer computations.
+- \textsc{Merge2} provides the best runtime performance, reducing distance computations by up to 70\% while maintaining high recall in most cases.
+
+These results demonstrate the practical benefit of incorporating approximate search into the merge process, allowing efficient index compaction without significant degradation in search quality.
+
 
 
 \begin{figure}
