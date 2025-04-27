@@ -1,8 +1,27 @@
 #!python
 # -*- coding: utf-8 -*-
+from copy import deepcopy
 from tqdm import tqdm
 from hnsw import HNSW
 import random
+
+# Возможно стоит назвать naive_merge или default_merge
+def insertion_merge(hnsw_a, hnsw_b, ef_construction):
+    '''
+    Insert nodes from hnsw_b to hnsw_a by simple insertion
+
+    hnsw_a    – the first hnsw graph 
+    hnsw_b    – the second hnsw graph
+    ef_construction – ef parameter for searching candidates in the second graph
+    '''
+
+    hnsw_c = deepcopy(hnsw_a)
+    hnsw_c.ef_construction = ef_construction
+    # hnsw_c = HNSW(distance_func=hnsw_a.distance_func, m=hnsw_a.m, m0=hnsw_a.m0, ef=hnsw_a.ef, ef_construction=hnsw_a.ef_construction, neighborhood_construction = hnsw_a.neighborhood_construction) 
+    for key, point in tqdm(hnsw_b.data.items()):
+        hnsw_c.add(key, point)
+    return hnsw_c
+
 
 def hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_merge_func):
     hnsw_merged = HNSW(distance_func=hnsw_a.distance_func, m=hnsw_a.m, m0=hnsw_a.m0, ef=hnsw_a.ef, ef_construction=hnsw_a.ef_construction, neighborhood_construction = hnsw_a.neighborhood_construction)
@@ -11,7 +30,6 @@ def hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_merge_func):
     levels_merged_max = max(len(hnsw_a.graphs), len(hnsw_b.graphs))
     levels_merged_min = min(len(hnsw_a.graphs), len(hnsw_b.graphs))
     
-
     for level in range(levels_merged_min): 
         print('Merging level:', level)
         hnsw_merged.graphs.append(  layer_merge_func(hnsw_a, hnsw_b, merged_data, level) )
@@ -29,7 +47,7 @@ def hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_merge_func):
 
     return hnsw_merged
 
-
+# TODO переименовать в simple_merge
 def merge_naive_layer(hnsw_a, hnsw_b, merged_data, level, search_ef=5):
     '''
     hnsw_a    – the first hnsw graph 
