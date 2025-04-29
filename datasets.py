@@ -6,7 +6,7 @@ def read_fvecs(filename):
     with open(filename, 'rb') as f:
         while True:
             vec_size = np.fromfile(f, dtype=np.int32, count=1)
-            if not vec_size:
+            if vec_size.size == 0:
                 break
             vec = np.fromfile(f, dtype=np.float32, count=vec_size[0])
             yield vec
@@ -16,7 +16,7 @@ def read_ivecs(filename):
     with open(filename, 'rb') as f:
         while True:
             vec_size = np.fromfile(f, dtype=np.int32, count=1)
-            if not vec_size:
+            if vec_size.size == 0:
                 break
             vec = np.fromfile(f, dtype=np.int32, count=vec_size[0])
             yield vec
