@@ -81,7 +81,7 @@ def merge_naive(hnsw_a, hnsw_b, merged_data, merge_ef = 20):
     return hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_merge_naive_func)
 
 
-def merge1_layer(hnsw_a, hnsw_b, merged_data, level, jump_ef, local_ef, next_step_k, next_step_ef, M):
+def IGTM_layer(hnsw_a, hnsw_b, merged_data, level, jump_ef, local_ef, next_step_k, next_step_ef, M):
     '''
     hnsw_a       – first hnsw graph 
     hnsw_b       – second hnsw graph
@@ -139,19 +139,19 @@ def merge1_layer(hnsw_a, hnsw_b, merged_data, level, jump_ef, local_ef, next_ste
     return merged_edges
 
 
-def merge1(hnsw_a, hnsw_b, merged_data, jump_ef=20, local_ef=5, next_step_k=5, next_step_ef=3, M = 5):
-    def layer_merge1_func(hnsw_a, hnsw_b, merged_data, level) :
+def IGTM(hnsw_a, hnsw_b, merged_data, jump_ef=20, local_ef=5, next_step_k=5, next_step_ef=3, M = 5):
+    def layer_IGTM_func(hnsw_a, hnsw_b, merged_data, level) :
         merged_edges = {} 
         # phase 1) 
-        merged_edges.update(merge1_layer(hnsw_a, hnsw_b, merged_data, level=level, jump_ef=jump_ef, local_ef=local_ef, next_step_k=next_step_k, next_step_ef=next_step_ef, M = M))
+        merged_edges.update(IGTM_layer(hnsw_a, hnsw_b, merged_data, level=level, jump_ef=jump_ef, local_ef=local_ef, next_step_k=next_step_k, next_step_ef=next_step_ef, M = M))
         # phase 2)
-        merged_edges.update(merge1_layer(hnsw_b, hnsw_a, merged_data,  level=level, jump_ef=jump_ef, local_ef=local_ef, next_step_k=next_step_k, next_step_ef=next_step_ef, M = M))
+        merged_edges.update(IGTM_layer(hnsw_b, hnsw_a, merged_data,  level=level, jump_ef=jump_ef, local_ef=local_ef, next_step_k=next_step_k, next_step_ef=next_step_ef, M = M))
         return merged_edges
 
-    return hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_merge1_func)
+    return hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_IGTM_func)
 
 
-def merge2_layer(hnsw_a, hnsw_b, merged_data, level, jump_ef = 20, local_ef=5, next_step_k=3, M = 3):
+def CGTM_layer(hnsw_a, hnsw_b, merged_data, level, jump_ef = 20, local_ef=5, next_step_k=3, M = 3):
     '''
     hnsw_a       – First hnsw graph 
     hnsw_b       – Second hnsw graph
@@ -211,8 +211,8 @@ def merge2_layer(hnsw_a, hnsw_b, merged_data, level, jump_ef = 20, local_ef=5, n
     return merged_edges
                            
 
-def merge2(hnsw_a, hnsw_b, merged_data, jump_ef=20, local_ef=5, next_step_k=3, M=3):
-    def layer_merge2_func(hnsw_a, hnsw_b, merged_data, level) :
-        return merge2_layer(hnsw_a=hnsw_a, hnsw_b=hnsw_b, merged_data=merged_data, level=level, jump_ef=jump_ef, local_ef=local_ef, next_step_k=next_step_k, M=M)
+def CGTM(hnsw_a, hnsw_b, merged_data, jump_ef=20, local_ef=5, next_step_k=3, M=3):
+    def layer_CGTM_func(hnsw_a, hnsw_b, merged_data, level) :
+        return CGTM_layer(hnsw_a=hnsw_a, hnsw_b=hnsw_b, merged_data=merged_data, level=level, jump_ef=jump_ef, local_ef=local_ef, next_step_k=next_step_k, M=M)
     
-    return hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_merge2_func)    
+    return hnsw_general_merge(hnsw_a, hnsw_b, merged_data, layer_CGTM_func)    

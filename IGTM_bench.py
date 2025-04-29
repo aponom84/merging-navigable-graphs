@@ -5,7 +5,7 @@ from hnsw import HNSW
 from hnsw import heuristic
 import numpy as np
 from datasets import load_sift_dataset, calculate_recall
-from merge_hnsw import merge1
+from merge_hnsw import IGTM
 import os.path
 import pandas as pd 
 
@@ -15,7 +15,7 @@ def l2_distance(a, b):
     distance_count+=1
     return np.linalg.norm(a - b)
 
-result_file = 'results/merge1_result.csv'
+result_file = 'results/IGTM_result.csv'
 
 k=5
 efs=[32,40,50,64,72]
@@ -74,12 +74,12 @@ _, test_data, groundtruth_data = load_sift_dataset(train_file = None,
                                                       groundtruth_file='../datasets/sift1m-128d/sift_groundtruth.ivecs')
 
 for merge_params in merge_params_list:
-    exp = {'algorithm': 'merge1'}
+    exp = {'algorithm': 'IGTM'}
     exp['params'] = merge_params
     print('Executing:', merge_params)
 
     distance_count = 0
-    hnsw_merged1 = merge1(hnsw_a, hnsw_b, merged_data, 
+    hnsw_merged1 = IGTM(hnsw_a, hnsw_b, merged_data, 
                           jump_ef=merge_params['jump_ef'], 
                           local_ef=merge_params['local_ef'], 
                           next_step_k=merge_params['next_step_k'],
