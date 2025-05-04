@@ -122,6 +122,8 @@ The rest of this paper is organized as follows: Section 2 describes the search a
 
 The search process in navigable graphs is a critical operation that underlies both query processing and the graph construction phase. Below, we describe two key search algorithms: \textsc{LocalSearch} for exploring a single graph layer, and \textsc{HNSW-Search} for hierarchical multi-layer traversal.
 
+% 
+
 \subsection{Local Search}
 
 \begin{algorithm}
@@ -184,6 +186,13 @@ This hierarchical search significantly reduces the number of distance computatio
 The parameters $k$, $L$, and the choice of entry point $v_0$ collectively influence the search quality and efficiency. Typically, $v_0$ is selected as the entry point at the highest layer of the HNSW structure, though any vertex in the graph can theoretically serve as the starting point.
 
 Both search algorithms are fundamental not only for answering queries but also for the merge operations described in subsequent sections, as they provide the mechanism for identifying candidate neighbors when reconstructing connections in the merged graph.
+
+\textsc{HNSW-Search} algorithm is a default search algorithm that is exposed to the user in all popular HNSW implementations with a default value of the parameter $\ell = 0$, and assuming that $v_0$ is one of the vertex of the top layer \cite{Vardanian_USearch_2023}, \cite{hnswlib2025}, \cite{faiss}.
+
+In the text, we also refer to the \textsc{HNSW-Search} algorithm as a ``standard'', or ``default search" algorithm. The \textsc{LocalSearch} function is hidden from the user and is used only as a part of a particular implementation".
+% Тут надо написать не криво. И сказать, что 
+
+
 
 \section{Neighborhood Construction Strategies}
 
@@ -429,7 +438,7 @@ Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which 
 \begin{figure}
   \centering
   \includegraphics[width=1.\linewidth]{figs/recall_vs_distance_count.pdf}
-  \caption{Recall vs distance count on search stage for merged graphs}
+  \caption{Recall vs distance count on search stage for merged graphs. }
 \label{fig:search}
 \end{figure}
 
@@ -444,9 +453,12 @@ Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which 
 \subsection{Setup}
 
 We evaluated the proposed merge algorithms on the standard ANN benchmark dataset SIFT1M of 1 million 128-dimensional vectors. We divided it into two disjoint subsets of 500k vectors. On those subsets we built two HNSW indices $\mathcal{H}_a$ and $\mathcal{H}_b$ using the following parameters: $M = 16$, $M0$ = 32, ef\_construction = 32.
-These indices are then merged using simple insertion stategy textsc{SIGM} and the three proposed algorithms: textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. We keep the same values of parameters $m = 16$, and $m0 = 32$  as the target neighborhood size in the merged graph.
+These indices are then merged using simple insertion stategy textsc{SIGM} and the three proposed algorithms: textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. We keep the same values of parameters $m = 16$, and $m0 = 32$ as the target neighborhood size in the merged graph.
 
-In order to be independent of the implementation details and low level optimisation, we have done comparison of the algorithms based on the number of distance computation required for the merge process. The other important characteristics of merging process is how accurate the merge is done, i.e. how the merged graph is good for search. To quantify search quality, we performed a standard search performance test on the merged graphs. So, for the merged graphs, we have measured a trade-off between recall and the number of distance computations, by running algorithm ~\ref{alg:hnsw_search} with different values of the parameter $L$ (search expansion factor). We measured the recall@5 metric for L = 32, 40, 50, 64, and 72. This metric indicates how often the true nearest neighbors appear in the top-5 results returned by the search algorithm.
+In order to be independent of the implementation details and low level optimisation, we have done comparison of the algorithms based on the number of distance computation required for the merge process.
+
+Other important characteristics of the merging process is how accurate the merge is done. In this case, the word ``merging accuracy'' can mean different things. For example, we can estimate merging accuracy as how similar the neighborhoods of the merged graph to the neighborhoods of the graph constructed by simple insertion strategy \textsc{SIGM}. 
+Another way, which we prefer, is to verify how the merged graph is good for search. To quantify search quality, we performed a standard search performance test on the merged graphs. So, for the merged graphs, we have measured a trade-off between recall and the number of distance computations, by running algorithm ~\ref{alg:hnsw_search} with different values of the parameter $L$ (search expansion factor). We measured the recall@5 metric for L = 32, 40, 50, 64, and 72. This metric indicates how often the true nearest neighbors appear in the top-5 results returned by the search algorithm.
 
 Formally, for a given query point \(q\), let \(P_k(q)\) denote the set of \(k\) true nearest neighbors, and let \(A_k(q)\) be the set of top \(k\) points returned by the algorithm. Then, the recall@k is defined as:
 
@@ -454,7 +466,7 @@ Formally, for a given query point \(q\), let \(P_k(q)\) denote the set of \(k\) 
 \text{recall@}k = \frac{|P_k(q) \cap A_k(q)|}{k}
 \]
 
-In our experiment as recall@5 we report an averaged value over all searches. 
+In our experiment as recall@5 we report an averaged value over all sequence of searches. 
 
 \subsection{Results}
 
@@ -463,9 +475,9 @@ The searching quality of the merged graph can be seen from the Fig. ~\ref{fig:se
 Another important fact which ~\ref{fig:search} shows that the number of distance computations performed by the searching algorithm (Algorithm ~\ref{alg:hnsw_search}) for equal parameter $L$ are almost the same.  Therefore, the graph is better if it provides better search recall for a fixed value of the parameter $L$. Taking this into account, we can better interpret Fig. ~\ref{fig:recall_vs_merge}. It is easy to see the following:  
 
 \begin{itemize}
-    \item\textsc{IGTM} and \textsc{IGTM}  in our experiment setup  achieve recall better than \textsc{SIGM} with parameter ef\_construciton = 24
-    \item \textsc{NGM} and \textsc{SIGM} perform the most computations, but achieves the highest recall, as it exhaustively reconstructs each neighborhood.
-    \item \textsc{CGTM} achieving comparable recall with approximately 60\% fewer computations than \textsc{NGM} and \textsc{SIGM}.
+    \item\textsc{IGTM} and \textsc{IGTM}  in our experiment setup  achieve recall better than \textsc{SIGM} with parameter ef\_construciton = 24;
+    \item \textsc{NGM} and \textsc{SIGM} perform the most computations, but achieves the highest recall, as it exhaustively reconstructs each neighborhood;
+    \item \textsc{CGTM} achieving comparable recall with approximately 60\% fewer computations than \textsc{NGM} and \textsc{SIGM};
     \item \textsc{IGTM} provides the best run-time performance, reducing distance computations about 20\% than \textsc{CGTM}, and about 70\% than \textsc{NGM} and \textsc{SIGM} while achieving comparable recall.
 \end{itemize}
 
