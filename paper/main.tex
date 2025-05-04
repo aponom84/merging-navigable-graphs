@@ -481,10 +481,6 @@ Another important fact which ~\ref{fig:search} shows that the number of distance
     \item \textsc{IGTM} provides the best run-time performance, reducing distance computations about 20\% than \textsc{CGTM}, and about 70\% than \textsc{NGM} and \textsc{SIGM} while achieving comparable recall.
 \end{itemize}
 
-% TODO И тут надо сказать, что нас удивило, что ITGM показал лучшую производительность, чем CTGM. Поскольку мы ожидали, что CTGM будет производительно из того, что он имеет возможность выбирать следущую "опорную" вершину среди обеих графов и имеет меньше шансов застрять, и следовательно сделать меньше дорогостоящих операций полного поиска. По всей видимости выбор "главной" вершины в CGTM слишком дорогая операцией. И эти затраты не окупаются, сокращением числа полных поисков при "застревании".
-
-
-
 \begin{figure}
   \centering
   \includegraphics[width=1.\linewidth]{figs/recall_vs_merge_distance_count.pdf}
@@ -504,9 +500,11 @@ Interestingly, our experiments revealed that \textsc{IGTM} outperformed \textsc{
 
 In addition, an important direction for future work is adapting the proposed merge algorithms to handle deleted vertices. This would enable their use in compaction processes, where graphs are periodically restructured to remove obsolete entries and maintain search efficiency. By extending our merge algorithms to filter out deleted nodes during the ``Processing Vertex Selection'' phase.
 
-Finally, the researchers can focus on the idea that the neighborhood construction can be done for the set of vertex close to each other instead of forming neighborhood for one vertex per iteration. This can be more suitable for GPU or NPU settings.  
+Also, the researchers can focus on the idea that the neighborhood construction can be done for the set of vertex close to each other instead of forming neighborhood for one vertex per iteration. This can be more suitable for GPU or NPU settings.  
 
 Additional areas for exploration include adaptive parameter selection based on dataset characteristics, and extensions to other graph-based index structures beyond HNSW. 
+
+Finally, future work can be applied to develop a fast graph construction procedure using one of the merge algorithms. It seems very naturally to start from the set of small graphs and merge them in a recursive manner.
 
 \bibliographystyle{plain}
 \bibliography{references}
