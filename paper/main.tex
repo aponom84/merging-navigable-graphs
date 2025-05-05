@@ -40,6 +40,7 @@
 
 \section{Introduction}
 
+%TODO здесь надо сказать, именно проважность задачи k-nn для прирожений. Упомянть про RAG, а далее уже перейти к формальной постановке задаче и какие методы для её решения бывают. Далее надо сказать про после того, как было упомянуто про графовые методы, сказать что там етсь задача объединения графов построенных на разных данных. В частности это может быть важно при compaction. 
 Navigable small-world graphs have emerged as a cornerstone for efficient approximate nearest neighbor (ANN) search in high-dimensional spaces. This problem is crucial in fields such as recommendation systems, image retrieval, and natural language processing. Algorithms like Hierarchical Navigable Small World (HNSW) \cite{hnsw} and its predecessor Navigable Small World (NSW) \cite{nsw2011,nsw2012,nsw2014} provide robust and scalable frameworks for organizing data into graph structures that support fast similarity searches.
 
 \subsection{Nearest Neighbor Search Problem}
@@ -151,13 +152,13 @@ The search process in navigable graphs is a critical operation that underlies bo
 \end{algorithmic}
 \end{algorithm}
 
-The \textsc{LocalSearch} algorithm (Algorithm~\ref{alg:local_search}) implements a greedy search within a single graph layer. Starting with an initial candidate set $C$, it iteratively explores the neighborhood of the closest unvisited point to the query $q$. This exploration strategy balances depth-first search for quick convergence toward the target region with breadth-first search for escaping local minima.
+The \textsc{LocalSearch} algorithm (Algorithm~\ref{alg:local_search}) implements a ``greedy'' like search within a single graph layer. Starting with an initial candidate set $C$, it iteratively explores the neighborhood of the closest unvisited point to the query $q$. This exploration strategy balances depth-first search for quick convergence toward the target region with breadth-first search for escaping local minima. In the literature, this algorithm is also named "beam search" \cite{prokhorenkova2020graph}, \cite{yang2024revisiting}. It was introduced in \cite{nsw2011} paper, and later adopted in HNSW in other graph-based methods as a basic search algorithm \cite{diskann}, \cite{wang2021comprehensive}.
 
-For each iteration, \textsc{LocalSearch} selects the nearest unvisited point $u$ to the query and explores its immediate neighbors. These neighbors are added to the candidate set if they have not been visited previously. The candidate set is constrained to size $L$ (the expansion factor) by retaining only the $L$ points closest to the query. This pruning step is crucial for efficient search by focusing computational resources on the most promising candidates.
+For each iteration, \textsc{LocalSearch} selects the closest unvisited point $u$ to the query and explores its immediate neighbors. These neighbors are added to the candidate set if they have not been visited previously. The candidate set is constrained to size $L$ (the expansion factor) by retaining only the $L$ points closest to the query. This pruning step is crucial for an efficient search by focusing computational resources on the most promising candidates.
 
 The search terminates when no additional updates to the candidate set occur during an iteration, indicating convergence. The algorithm then returns the $k$ nearest points to the query from the final candidate set, which represents the approximate $k$-nearest neighbors of the query within the graph structure.
 
-The parameter $L$ provides a direct trade-off between search quality and computational cost. Larger values of $L$ allow for broader exploration, potentially escaping local minima and finding better global solutions, but at the expense of increased computation time. In the HNSW paper, parameter $L$ named as \textbf{ef} (expansion factor) parameter.
+The parameter $L$ provides a direct trade-off between search quality and computational cost. Larger values of $L$ allow for a broader exploration, potentially escaping local minima and finding better global solutions, but at the expense of increased computation time. In the HNSW paper, the parameter $L$ is named as \textbf{ef} (expansion factor) parameter.
 
 \subsection{Hierarchical Search}
 \label{subasec: hnsw-search}
@@ -175,23 +176,19 @@ The parameter $L$ provides a direct trade-off between search quality and computa
 \end{algorithmic}
 \end{algorithm}
 
-The \textsc{HNSW-Search} algorithm (Algorithm~\ref{alg:hnsw_search}) leverages the hierarchical structure of HNSW to efficiently navigate through the vector space. Search begins at the highest layer $l_{\max}$ of the HNSW structure with a single entry point $v_0$. At each layer, \textsc{LocalSearch} is used to find the best approximation of the nearest neighbor to the query within that layer.
+The \textsc{HNSW-Search} algorithm (Algorithm~\ref{alg:hnsw_search}) leverages the hierarchical structure of HNSW to efficiently navigate through the vector space. The search begins at the highest layer $l_{\max}$ of the HNSW structure with a single entry point $v_0$. At each layer, \textsc{LocalSearch} is used to find the best approximation of the nearest neighbor to the query within that layer.
 
 The algorithm traverses from the highest layer down to the target layer $\ell$, using the result from each layer as the entry point for the next lower layer. This coarse-to-fine approach allows the search to quickly focus on the relevant region of the vector space at higher, sparser layers before refining the search in the more densely connected lower layers.
 
-At each layer $i$ (from $l_{\max}$ down to $\ell+1$), \textsc{LocalSearch} is executed with $k=1$ to find a single nearest neighbor to the query. This single neighbor serves as the entry point for the subsequent layer. At the target layer $\ell$, a final \textsc{LocalSearch} is performed with the specified $k$ value to retrieve the $k$ nearest neighbors.
+At each layer $i$ (from $l_{\max}$ down to $\ell+1$), \textsc{LocalSearch} is executed with $k=1$ to find a single nearest neighbor to the query. This single neighbor serves as an entry point for the subsequent layer. At the target layer $\ell$, a final \textsc{LocalSearch} is performed with the specified value $k$ to retrieve the $k$-nearest neighbors.
 
 This hierarchical search significantly reduces the number of distance computations compared to a flat graph search, especially for large-scale datasets. The efficiency comes from the progressive narrowing of the search space as the algorithm moves down through the layers, focusing the search on increasingly relevant regions.
-
-The parameters $k$, $L$, and the choice of entry point $v_0$ collectively influence the search quality and efficiency. Typically, $v_0$ is selected as the entry point at the highest layer of the HNSW structure, though any vertex in the graph can theoretically serve as the starting point.
 
 Both search algorithms are fundamental not only for answering queries but also for the merge operations described in subsequent sections, as they provide the mechanism for identifying candidate neighbors when reconstructing connections in the merged graph.
 
 \textsc{HNSW-Search} algorithm is a default search algorithm that is exposed to the user in all popular HNSW implementations with a default value of the parameter $\ell = 0$, and assuming that $v_0$ is one of the vertex of the top layer \cite{Vardanian_USearch_2023}, \cite{hnswlib2025}, \cite{faiss}.
 
 In the text, we also refer to the \textsc{HNSW-Search} algorithm as a ``standard'', or ``default search" algorithm. The \textsc{LocalSearch} function is hidden from the user and is used only as a part of a particular implementation".
-% Тут надо написать не криво. И сказать, что 
-
 
 
 \section{Neighborhood Construction Strategies}
@@ -206,13 +203,13 @@ In the text, we also refer to the \textsc{HNSW-Search} algorithm as a ``standard
 \end{algorithmic}
 \end{algorithm}
 
-Various strategies exist for selecting a node's neighborhood in navigable small-world graphs. Our merging algorithms are designed to be agnostic to the specific neighborhood construction method, which can be provided as a parameter. We present two representative strategies below.
+Various strategies exist for selecting a node's neighborhood to form a navigable property for a graph. Our merging algorithms are designed to be agnostic to the specific neighborhood construction method, which can be provided as a parameter. We present two representative strategies below.
 
-The \textsc{KNN-Neighborhood-Construction} algorithm (Algorithm~\ref{alg:knntrategy}) implements the simplest approach, where a vertex's neighborhood consists of its $k$ nearest neighbors from the candidate set. This strategy prioritizes proximity but may not optimize for graph navigability properties.
+The \textsc{KNN-Neighborhood-Construction} algorithm (Algorithm~\ref{alg:knntrategy}) implements the simplest approach, where a vertex's neighborhood consists of its $k$-nearest neighbors from the candidate set. This strategy prioritizes proximity, but may not optimize for graph navigability properties.
 
-In contrast, the \textsc{RNG-Neighborhood-Construction} algorithm (Algorithm~\ref{alg:rngstrategy}) implements a more sophisticated approach based on relative neighborhood graph principles. It processes candidates in ascending order of distance to the target vertex $v^*$. For each candidate $v$, it checks whether $v$ is closer to $v^*$ than to any previously selected neighbor $w$. This pruning condition helps create better-connected graphs with improved navigability by ensuring that edges span different directions in the vector space rather than clustering in the same region. The algorithm limits the neighborhood size to at most $m$ vertices to control graph density.
+In contrast, the \textsc{RNG-Neighborhood-Construction} algorithm (Algorithm~\ref{alg:rngstrategy}) implements a more sophisticated approach based on relative neighborhood graph principles. It processes candidates in ascending order of distance to the target vertex $v^*$. For each candidate $v$, it checks whether $v$ is closer to $v^*$ than to any previously selected neighbor $w$. This pruning condition helps create better-connected graphs with improved navigability by ensuring that edges span different directions in the vector space rather than clustering in the same region. The algorithm limits the neighborhood size to at most $m$ vertices to control maximum vertex degree.
 
-The choice of neighborhood construction strategy significantly impacts both search performance and the computational cost of index maintenance operations, including merges. While \textsc{KNN-Neighborhood-Construction} is computationally simpler, \textsc{RNG-Neighborhood-Construction} typically produces graphs with better search performance at the expense of more complex neighborhood formation.
+The choice of neighborhood construction strategy significantly impacts both search performance and the computational cost of index maintenance operations, including merges. While \textsc{KNN-Neighborhood-Construction} is computationally simpler, \textsc{RNG-Neighborhood-Construction} typically produces graphs with better search performance at the expense of more complex neighborhood formation. In this paper, we performed our experiments with \textsc{RNG-Neighborhood-Construction}. 
 
 \begin{algorithm}
 \caption{\textsc{RNG-Neighborhood-Construction}($v^*, C, m$)}\label{alg:rngstrategy}
@@ -251,7 +248,7 @@ Before we start, we need provide a short descriptopn of simple insertion graph m
 
 \subsection{HNSW General Merge Framework}
 
-The \textsc{HNSW-General-Merge} algorithm (Algorithm~\ref{alg:general_merge}) provides a framework for merging two HNSW structures, $\mathcal{H}_a$ and $\mathcal{H}_b$. It iterates through each layer level and applies a chosen layer-merge algorithm (\textsc{NGM}, \textsc{IGTM}, or \textsc{CGTM}) to combine the corresponding layers $G^a_i$ and $G^b_i$. The layer-merge algorithms require access to the full HNSW structures $\mathcal{H}_a, \mathcal{H}_b$ to perform efficient searches using \textsc{HNSW-Search}.
+The \textsc{HNSW-General-Merge} algorithm (Algorithm~\ref{alg:general_merge}) provides a framework for merging two HNSW structures, $\mathcal{H}_a$ and $\mathcal{H}_b$. It iterates through each layer level and applies a chosen layer-merge algorithm (\textsc{NGM}, \textsc{IGTM}, or \textsc{CGTM}) to combine the corresponding layers $G^a_i$ and $G^b_i$. The layer-merge algorithms require access to the full HNSW structures $\mathcal{H}_a, \mathcal{H}_b$ to perform searches using \textsc{HNSW-Search}.
 
 
 \begin{algorithm}
@@ -287,7 +284,7 @@ For each vertex $v^*$ in graph $G^a_\ell$ (line 5), the algorithm:
   \item Selects the final neighborhood for $v^*$ using the specified \textsc{NeighborhoodConstruction} strategy and adds the corresponding edges to $E^c$ (line 8)
 \end{enumerate}
 
-The process is then repeated for all vertices of graph $G^b_\ell$ (lines 9-12), searching for their potential neighbors in $G^a_\ell$.
+The same process is then repeated for all vertices of graph $G^b_\ell$ (lines 9-12).
 
 This approach ensures that each vertex in the merged graph has an appropriate neighborhood that incorporates information from both input graphs. However, it is computationally intensive due to repeated \textsc{HNSW-Search} calls that traverse multiple layers for each vertex.
 
@@ -319,10 +316,10 @@ This approach ensures that each vertex in the merged graph has an appropriate ne
 \end{algorithm}
 
 \subsection{Intra Graph Traversal Merge}
-The most effort of \textsc{NGM} algorithm lies in the set of neighborhood candidates from the opposite graph utilising \textsc{HNSW-Search} procedure, that traverses layers graph from the top-level down to layer number $\ell$ every time. The number of computations can be reduced if we select the next vertex $v^*$ close to the previous one (line 15), instead of choosing it randomly. Thus, for new $v^*$ the neighborhood candidates will be  also close to the previous candidates set. To search this new neighborhood candidates we can use \textsc{LocalSearch} procedure, that traversing the same graph staring from the previous neighborhood candidates set $\mathcal{P}^b$ (line 11,14). In the line 14 in set $\mathcal{P}^b$ we keep only $M$-closest to $v^*$ candidates.\\
-In the line 15 almost at each iteration we try select new $v^*$ vertex close to the previous  $v^*$ that was not already processed.  
-To ensure that new $v^*$ vertex are not very far from the previous $v^*$ we bound the size of results of \textsc{LocalSearch} procedure controlling by "next\_step\_k" parameter. Once \textsc{LocalSearch} can't find enough close not processed vertex, in line 7 we choice new $v^*$ from the set $\mathcal{V}_{not\_done}$ randomly. \\
-After we have processed all vertices from the the graph $G^a$. We do the same for vertices of graph $G^b$ (lines 21-22).  
+The most effort of the \textsc{NGM} algorithm lies in obtaining the set of neighborhood candidates from the other graph utilising \textsc{HNSW-Search} procedure, that every time traverses layer graphs from the top-level down to layer number $\ell$. The number of computations can be reduced if we select the next vertex to process $v^*$ close to the previous one (line 15), instead of randomly choosing it. Thus, for the new $v^*$ the neighborhood candidates will also be close to the previous candidates set. To search these new neighborhood candidates we can use \textsc{LocalSearch} procedure, that traverses the same graph staring from the previous neighborhood candidates set $\mathcal{P}^b$ (lines 11). In line 14 in set $\mathcal{P}^b$ we keep only $M$-closest to $v^*$ candidates.\\
+In lines 15,16 we select new processing vertex $v^*$  close to the previous processing vertex $v^*$ that was not already processed.  
+To ensure that the new processing vertex $v^*$ is not very far from the previous $v^*$ we bound the size of the results of the \textsc{LocalSearch} procedure controlling by next\_step\_k parameter. Once \textsc{LocalSearch} can't find enough close not processed vertex (if condition in line 17), in line 7 we choice new $v^*$ from the set $\mathcal{V}_{not\_done}$ randomly. \\
+After we have processed all vertices from the graph $G^a$. We do the same for the vertices of graph $G^b$ (lines 21-22).  
 
 \begin{algorithm}
 \caption{\textsc{IGTM}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M, m$)}\label{alg:IGTM}
@@ -372,8 +369,8 @@ After we have processed all vertices from the the graph $G^a$. We do the same fo
 
 \subsection{Cross Graph Traversal Merge}
 
-Cross Graph Traversal Merge (\textsc{CGTM}) algorithm is similar to \textsc{IGTM} utilise \textsc{LocalSearch} procedure to reduce computation effort. The difference is that \textsc{IGTM} algorithm the next $v^*$ vertex choice from the same graph, while \textsc{CGTM} looks for new vertex $v^*$ in the both graphs $G^a$, and $G^b$. 
-Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which of not processed vertex from the both graph (line 21). The intuition laying behind \textsc{CGTM} algorithm is that allowing to choice new $v^*$ from the both graphs, we reduce the number of times what $v^*$ is chosen randomly, thereby minimise the number of using more expensive search procedure \textsc{HNSW-Search}.
+Cross Graph Traversal Merge (\textsc{CGTM}) algorithm is similar to \textsc{IGTM} utilizes \textsc{LocalSearch} procedure to reduce computation efforts. The difference is that \textsc{IGTM} algorithm chooses the next processing vertex $v^*$ from the same graph, while \textsc{CGTM} looks for the new processing vertex $v^*$ in both graphs $G^a$, and $G^b$. 
+Thus in line 24 $v^*$ is chosen from the set $\mathcal{C}_{not\_done}$, which is one of the not processed vertex of both graph (line 21). The intuition underlying \textsc{CGTM} algorithm is that when we choose a new processing vertex $v^*$ from both graphs, we reduce the number of times when $v^*$ is chosen randomly, thus minimizing the number of times that we use the more expensive search procedure \textsc{HNSW-Search}.
 
 \begin{algorithm}
     \caption{\textsc{CGTM}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M, m$)}\label{alg:CGTM}
@@ -453,11 +450,11 @@ Thus in line 24  $v^*$  is chosen from the set $\mathcal{C}_{not\_done}$, which 
 \subsection{Setup}
 
 We evaluated the proposed merge algorithms on the standard ANN benchmark dataset SIFT1M of 1 million 128-dimensional vectors. We divided it into two disjoint subsets of 500k vectors. On those subsets we built two HNSW indices $\mathcal{H}_a$ and $\mathcal{H}_b$ using the following parameters: $M = 16$, $M0$ = 32, ef\_construction = 32.
-These indices are then merged using simple insertion stategy textsc{SIGM} and the three proposed algorithms: textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. We keep the same values of parameters $m = 16$, and $m0 = 32$ as the target neighborhood size in the merged graph.
+These indices are then merged using simple insertion strategy \textsc{SIGM} and the three proposed algorithms: \textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. We keep the same values of the parameters $m = 16$, and $m0 = 32$ as the target neighborhood size in the merged graph.
 
-In order to be independent of the implementation details and low level optimisation, we have done comparison of the algorithms based on the number of distance computation required for the merge process.
+In order to be independent of implementation details and low-level optimisations, we made a comparison of the algorithms based on the number of distance computations required for the merge process.
 
-Other important characteristics of the merging process is how accurate the merge is done. In this case, the word ``merging accuracy'' can mean different things. For example, we can estimate merging accuracy as how similar the neighborhoods of the merged graph to the neighborhoods of the graph constructed by simple insertion strategy \textsc{SIGM}. 
+Other important characteristics of the merge process is how accurate the merge is done. In this case, the word ``merging accuracy'' can mean different things. For example, we can estimate merging accuracy as how similar the neighborhoods of the merged graph to the neighborhoods of the graph constructed by simple insertion strategy \textsc{SIGM}. 
 Another way, which we prefer, is to verify how the merged graph is good for search. To quantify search quality, we performed a standard search performance test on the merged graphs. So, for the merged graphs, we have measured a trade-off between recall and the number of distance computations, by running algorithm ~\ref{alg:hnsw_search} with different values of the parameter $L$ (search expansion factor). We measured the recall@5 metric for L = 32, 40, 50, 64, and 72. This metric indicates how often the true nearest neighbors appear in the top-5 results returned by the search algorithm.
 
 Formally, for a given query point \(q\), let \(P_k(q)\) denote the set of \(k\) true nearest neighbors, and let \(A_k(q)\) be the set of top \(k\) points returned by the algorithm. Then, the recall@k is defined as:
@@ -466,13 +463,13 @@ Formally, for a given query point \(q\), let \(P_k(q)\) denote the set of \(k\) 
 \text{recall@}k = \frac{|P_k(q) \cap A_k(q)|}{k}
 \]
 
-In our experiment as recall@5 we report an averaged value over all sequence of searches. 
+In our experiment as recall@5 we report an averaged value over all sequences of searches. 
 
 \subsection{Results}
 
-The searching quality of the merged graph can be seen from the Fig. ~\ref{fig:search}. The graph plots trade-off between recall and the number of distance computations. As can be seen, \textsc{SIGM} with ef\_construction $\ge$ 32 and \textsc{NGM} with parameter jump\_ef = 20 produce merged graph with slightly better searing quality than other algorithms.
+The searching quality of the merged graph represented in Fig. ~\ref{fig:search}. The graph plots trade-off between recall and the number of distance computations. As can be seen, \textsc{SIGM} with ef\_construction $\ge$ 32 and \textsc{NGM} with parameter jump\_ef = 20 produce merged graph with slightly better searing quality than other algorithms.
 
-Another important fact which ~\ref{fig:search} shows that the number of distance computations performed by the searching algorithm (Algorithm ~\ref{alg:hnsw_search}) for equal parameter $L$ are almost the same.  Therefore, the graph is better if it provides better search recall for a fixed value of the parameter $L$. Taking this into account, we can better interpret Fig. ~\ref{fig:recall_vs_merge}. It is easy to see the following:  
+Another important fact which ~\ref{fig:search} shows that the number of distance computations performed by the search algorithm (Algorithm ~\ref{alg:hnsw_search}) for equal parameter $L$ are almost the same.  Therefore, the graph is better if it provides better search recall for a fixed value of the parameter $L$. Taking this into account, we can better interpret Fig. ~\ref{fig:recall_vs_merge}. It is easy to see the following:  
 
 \begin{itemize}
     \item\textsc{IGTM} and \textsc{IGTM}  in our experiment setup  achieve recall better than \textsc{SIGM} with parameter ef\_construciton = 24;
@@ -504,7 +501,7 @@ Also, the researchers can focus on the idea that the neighborhood construction c
 
 Additional areas for exploration include adaptive parameter selection based on dataset characteristics, and extensions to other graph-based index structures beyond HNSW. 
 
-Finally, future work can be applied to develop a fast graph construction procedure using one of the merge algorithms. It seems very naturally to start from the set of small graphs and merge them in a recursive manner.
+Finally, future work can be applied to develop a fast graph construction procedure using one of the merge algorithms. It seems very natural to start from the set of small graphs and merge them in a recursive manner.
 
 \bibliographystyle{plain}
 \bibliography{references}
