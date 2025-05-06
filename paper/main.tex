@@ -4,13 +4,17 @@
 \usepackage{authblk}
 
 \title{Three Algorithms for Merging Hierarchical Navigable Small World Graphs}
-\author[1]{Alexander Ponomarenko}
+\author[1,2]{Alexander Ponomarenko}
 \date{}
 
-% \affil[2]{YugaByte LLC}
-\affil[1]{HSE Univerity}
 
-\usepackage{natbib}
+\affil[1]{HSE Univerity}
+\affil[2]{YugaByte LLC}
+
+\usepackage[backend=biber,style=numeric-comp]{biblatex}
+\addbibresource{references.bib}
+\usepackage{hyperref}
+
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{algorithm}
@@ -26,30 +30,15 @@
 
 \maketitle
 
-% В итнтро добавть о том, что такое навигационные графы. Что такое hnsw. Какие операции он поддерживает. 
-% Раскрыть глобальную идею мерджа, что merge можно понимать как итеративный процесс из двух уопераций;
-% 1. Выбор вершины (мн) для которой мы намериваемся строить окрестность и для какого графа.
-% 2. Выбор кандидатов из каждого графа
-% 3. Построение окрестности (согласно одной из выбранных стратегий).
-% 4. Принятие решение о том, какую информацию передать на следущую итерацию
-
-% TODO для экспериментов. 
-% 2. Провести эксперименты для разных размерностей и размеров
-% 3. Следить за тем сколько операций "полного поиска было сделано" и сколько операций "local search".
-% 5. Сделать все теже эксперементы, но используя в качестве NeighborhoodConstruction k-nn
+%TODO здесь надо сказать, именно проважность задачи k-nn для прирожений. Упомянть про RAG, а далее уже перейти к формальной постановке задаче и какие методы для её решения бывают. Далее надо сказать про после того, как было упомянуто про графовые методы, сказать что там етсь задача объединения графов построенных на разных данных. В частности это может быть важно при compaction. 
 
 \section{Introduction}
+\label{sec:intro}
+The k-nearest neighbor (k-NN) search problem has emerged as a fundamental computational challenge with critical applications across numerous domains. In today's data-driven landscape, efficient similarity search is essential for recommendation systems, computer vision, multimedia retrieval, and natural language processing applications. Recent advancements in generative AI, particularly Retrieval-Augmented Generation (RAG) systems, have further highlighted the importance of fast and accurate nearest neighbor search. RAG frameworks depend on efficient retrieval of relevant document fragments from large vector databases to ground language model outputs in factual information, making high-performance approximate nearest neighbor (ANN) search algorithms increasingly vital.
 
-%TODO здесь надо сказать, именно проважность задачи k-nn для прирожений. Упомянть про RAG, а далее уже перейти к формальной постановке задаче и какие методы для её решения бывают. Далее надо сказать про после того, как было упомянуто про графовые методы, сказать что там етсь задача объединения графов построенных на разных данных. В частности это может быть важно при compaction. 
-Navigable small-world graphs have emerged as a cornerstone for efficient approximate nearest neighbor (ANN) search in high-dimensional spaces. This problem is crucial in fields such as recommendation systems, image retrieval, and natural language processing. Algorithms like Hierarchical Navigable Small World (HNSW) \cite{hnsw} and its predecessor Navigable Small World (NSW) \cite{nsw2011,nsw2012,nsw2014} provide robust and scalable frameworks for organizing data into graph structures that support fast similarity searches.
+%As data volumes continue to grow exponentially, traditional exact k-NN methods struggle with the computational demands of high-dimensional spaces. This has driven significant research interest in approximate methods that sacrifice perfect accuracy for substantial improvements in query speed and memory efficiency. Among these approaches, navigable small-world graphs have emerged as a particularly effective framework for organizing data into structures that support fast similarity searches.
 
 \subsection{Nearest Neighbor Search Problem}
-
-% Formally, the nearest neighbor search problem can be defined as follows: Given a set of points $P = \{p_1, p_2, ..., p_n\}$ in a metric space $(X, \rho)$, where $\rho$ is a distance function, and a query point $q \in X$, find the point $p^* \in P$ such that:
-
-% $$p^* = \underset{p \in P}{\mathrm{argmin}} \rho(q, p)$$
-
-
 
 Formally, the \(k\)-nearest neighbor search problem can be defined as follows:
 Given a set of points
@@ -67,39 +56,42 @@ P_k
 \]
 In other words, we seek the set of $k$ points whose total distance to $q$ is minimal.
 
-
-In high-dimensional spaces, this problem becomes computationally challenging due to the ``curse of dimensionality.'' Exact solutions often degrade to linear scan as dimensionality increases, making them impractical for large-scale applications. This has led to the development of approximate $k$-nearest neighbor (ANN) search methods, which trade perfect accuracy for substantial improvements in computational efficiency.
+%In high-dimensional spaces, this problem becomes computationally challenging due to the ``curse of dimensionality.'' Exact solutions often degrade to linear scan as dimensionality increases, making them impractical for large-scale applications. This has led to the development of approximate $k$-nearest neighbor (ANN) search methods, which trade perfect accuracy for substantial improvements in computational efficiency.
 
 Three main approaches have been developed for tackling the nearest neighbor search problem:
 
 \begin{enumerate}
-    \item \textbf{Space-partitioning trees}: These methods divide the vector space into hierarchical regions, enabling logarithmic search complexity in low dimensions. Notable examples include KD-trees \cite{Bentley1990k}, R-trees \cite{guttman1984r}, VP-trees \cite{yianilos1993}, M-trees \cite{ciaccia1997m}, and Cover trees \cite{beygelzimer2006cover}. A comprehensive overview of these approaches for metric spaces is provided by Zezula et al. \cite{zezula2006similarity}.
+    \item \textbf{Space-partitioning trees}: These methods divide the vector space into hierarchical regions, enabling logarithmic search complexity in low dimensions. Notable examples include KD-trees \cite{bentley1990k}, R-trees \cite{guttman1984r}, VP-trees \cite{yianilos1993}, M-trees \cite{ciaccia1997m}, and Cover trees \cite{beygelzimer2006cover}. A comprehensive overview of these approaches for metric spaces is provided by Zezula et al. \cite{zezula2006similarity}.
 
     \item \textbf{Mapping-based methods}: These techniques transform the original data into representations that allow for efficient search. This category includes Locality-Sensitive Hashing (LSH) \cite{Indyk1998,Gionis1999,Datar2004,Andoni2006,Andoni2015} and Product Quantization approaches \cite{Jegou2011,Ge2013,Norouzi2013}, which encode vectors into compact codes that approximate distances between points.
 
     \item \textbf{Navigable graph-based methods}: The most recent and currently state-of-the-art approach that constructs graph structures where vertices represent data points and edges connect similar points. These graphs are designed to allow ``greedy-like'' algorithms to perform directed traversal through the data space.
 \end{enumerate}
 
-
 \subsection{Hierarchical Navigable Small World (HNSW)}
 
-HNSW \cite{hnsw} extends the navigable small-world concept by organizing points into a hierarchy of navigable graphs also named as layers. Each layer contains a progressively smaller subset of the data points. The bottommost layer contains all points, while higher layers form a sparse representation of the data space. 
-Graphs of all levels glued together form a navigable small world graph like NSW \cite{nsw2011}. An explicit separation small world graph to layers allows to reduce number of computation in search while traversing vertexes with high degrees also called hubs. 
+Hierarchical Navigable Small World (HNSW) \cite{hnsw} is a state of the art navigable graph-based method. It demonstrates superior performance on modern ANN benchmarks \cite{aumuller2020ann}. Due to relative simplicity, and efficiency, the HNSW algorithm has become widely used. It has been implemented in popular libraries for ANN-Search \cite{faiss}, \cite{nmspacelib}, and it is implemented as vector index in many database systems including PostgreSQL (vector extension), ORACLE \cite{OracleHNSW2023}, and other vector search oriented databases such as Milvus \cite{MilvusHNSW2024}, Zilliz \cite{ZillizHNSW2022}, Weaviate \cite{WeaviateVectorIndex2024}.  
 
-HNSW supports two primary operations: \textbf{search} (see section \ref{subasec: hnsw-search}) and  \textbf{insertion}. In the Fig. ~\ref{fig:hnsw} is a schematic example of multilayered structure of HNSW.
+%Among graph-based methods, Hierarchical Navigable Small World (HNSW)  and its predecessor Navigable Small World (NSW) \cite{nsw2011,nsw2012,nsw2014} have demonstrated superior performance in modern ANN benchmarks. These approaches leverage the small-world phenomenon to create graph structures with both short-range and long-range connections, enabling efficient navigation through high-dimensional data spaces.
+
+HNSW \cite{hnsw} extends the navigable graphs concept by organizing points into a hierarchy of navigable graphs also named as layers. Each layer contains a progressively smaller subset of data points. The bottommost layer contains all points, while higher layers form a sparse representation of the data space. 
+Graphs of all levels glued together form a navigable small world graph similar to NSW  \cite{nsw2011,nsw2012,nsw2014}. An explicit separation set of edges of different lengths to layers helps to reduce the number of computations in search while traversing vertexes with high degrees, also called hubs. A schematic example of HNSW structure presented in Fig. \ref{fig:hnsw}.
 
 \begin{figure}
   \centering
   \includegraphics[width=0.5\linewidth]{figs/hnsw-gpt.png}
-  \caption{Schematic example HNSW structure. Each layer is a navigable graph that suit for ``greedy-like'' traversal algorithms. Graphs of all levels glued together form a navigable small world graph like similar to NSW. An explicit separation small world graph to layers allows to reduce number of computation in search while traversing vertexes with high degrees also called hubs.}
+  \caption{Schematic example HNSW structure. Each layer is a navigable graph that suit for ``greedy-like'' traversal algorithms. Graphs of all levels glued together form a navigable small world graph similar to NSW. An explicit separation set of edges of different lengths to layers helps to reduce the number of computations in search while traversing vertexes with high degrees, also called hubs. }
 \label{fig:hnsw}
 \end{figure}
 
+\subsection{Graph Merging Challenge}
+
+While HNSW supports efficient dynamic insertions and deletions, an important operational challenge arises in practical systems: merging multiple independently constructed graph indices. This problem is particularly relevant in distributed systems, incremental indexing scenarios, and database compaction operations. In graph-based indices, deletion operations are often implemented by simply marking vertices as deleted without actually removing them, to avoid disrupting the graph's connectivity. This approach prevents the computationally expensive task of rebuilding neighborhoods for affected vertices. However, as deletions accumulate, the index becomes increasingly sparse and less efficient.
+
+Graph merging provides a way to periodically compact the structure by creating a fresh graph that excludes deleted vertices while preserving the navigability properties essential for efficient search. Additionally, in distributed computing environments, merging separately constructed indices becomes necessary for building unified search structures over partitioned datasets.
 
 \subsection{Graph Merging as an Iterative Process}
-One of the key challenges in maintaining these graph-based indices is efficiently combining data from multiple sources. While HNSW supports dynamic insertions, merging entire graphs as coherent structures presents a different challenge. The quality of the merged graph directly impacts search performance, and naive approaches may lead to suboptimal neighborhood connections or excessive computational costs during the merge operation.
-
-It is worth noting that graph merging can be used as an analog to compaction operations in database systems. In graph-based indices, deletion operations are often implemented by simply marking vertices as deleted without actually removing them, to avoid disrupting the graph's connectivity. This approach prevents the computationally expensive task of rebuilding neighborhoods for affected vertices. Moreover, a true deletion might trigger cascading neighborhood reconstructions that could potentially affect the entire graph, which is unacceptable from a performance perspective. Graph merging provides a way to periodically compact the structure by creating a fresh graph that excludes deleted vertices.
+%One of the key challenges in merging graph-based indices is efficiently combining data from multiple sources while preserving the navigable small-world properties. The quality of the merged graph directly impacts search performance, and naive approaches may lead to suboptimal neighborhood connections or excessive computational costs during the merge operation.
 
 The merge operation can be conceptualized as an iterative process consisting of four key steps:
 
@@ -115,15 +107,15 @@ The merge operation can be conceptualized as an iterative process consisting of 
 
 By carefully designing each of these steps, we can create merge algorithms that balance computational efficiency with the quality of the resulting graph structure. 
 
-In this work, we propose three novel algorithms based on this iterative framework—\textbf{Naive Graph Merge (NGM)}, \textbf{Intra Graph Traversal Merge (IGTM)}, and \textbf{Cross Graph Traversal Merge (CGTM)}—for efficiently merging navigable graphs. These algorithms differ primarily in how they implement each step of the iterative process. For instance, NGM and IGTM select the next vertex for neighborhood construction only from the same graph as the current vertex, promoting locality within original graphs. In contrast, CGTM implements the idea that the next vertex for neighborhood construction can be selected from any input graph, enabling more thorough exploration of the combined space. While our methods primarily target HNSW, they are generalizable to other graph-based data structures such as NSW \cite{nsw2011} and NSG \cite{NSG}. These algorithms preserve graph navigability and maintain the structural integrity necessary for fast ANN search while offering different trade-offs between merge accuracy and computational efficiency.
+In this work, we propose three novel algorithms based on this iterative framework—\textbf{Naive Graph Merge (NGM)}, \textbf{Intra Graph Traversal Merge (IGTM)}, and \textbf{Cross Graph Traversal Merge (CGTM)}—for efficiently merging HNSW graphs. These algorithms differ primarily in how they implement each step of the iterative process. For instance, NGM and IGTM select the next vertex for neighborhood construction only from the same graph as the current vertex. In contrast, CGTM implements the idea that the next vertex for neighborhood construction can be selected from any input graph.
 
-The rest of this paper is organized as follows: Section 2 describes the search algorithms for navigable graphs that we use in merge procedures. Section 3 presents neighborhood construction strategies that are essential for both graph building and merging. Section 4 introduces our three graph merging algorithms in detail. Section 5 presents experimental results comparing the proposed methods. Finally, Section 6 concludes the paper and discusses directions for future research.
+
+The rest of this paper is organized as follows. Section 2 describes the search algorithms for HNSW graphs that we use in merge procedures. Section \ref{sec:neighborhood} recalls neighborhood construction strategies that are essential for both graph building and merging. Section \ref{sec:merge} introduces our three graph merging algorithms in detail. Section \ref{sec:experimens} presents computational experimental results. We give references to similar works in Section \ref{sec:relatedworks}. Finally, Section \ref{sec:conclusion} concludes the paper and discusses directions for future research.
 
 \section{Search}
+\label{sec:search}
 
 The search process in navigable graphs is a critical operation that underlies both query processing and the graph construction phase. Below, we describe two key search algorithms: \textsc{LocalSearch} for exploring a single graph layer, and \textsc{HNSW-Search} for hierarchical multi-layer traversal.
-
-% 
 
 \subsection{Local Search}
 
@@ -192,6 +184,7 @@ In the text, we also refer to the \textsc{HNSW-Search} algorithm as a ``standard
 
 
 \section{Neighborhood Construction Strategies}
+\label{sec:neighborhood}
 
 \begin{algorithm}
 \caption{\textsc{KNN-Neighborhood-Construction}($v^*, C, k$)}\label{alg:knntrategy}
@@ -239,6 +232,7 @@ The choice of neighborhood construction strategy significantly impacts both sear
 
 % \textsc{KNN-Neighborhood-Construction}(Algorithm~\ref{alg:knntrategy}) is a simplest way to form neighbors, while \textsc{RNG-Neighborhood-Construction} (Algorithm~\ref{alg:rngstrategy}) is more advanced, that paratactically provides better navigability property.  
 \section{Merge Algorithms}
+\label{sec:merge}
 
 %We provide 3 merge algorithms: "Naive Merge", "IGTM", and "CGTM". We also refer to these algorithm as layer-merge algorithms. "Naive Merge" is a straight forward method, while "IGTM" and "CGTM" are more advanced. Together, these two algorithms constitute the main contribution of the work. The HNSW structure is a sequence of graphs, called layers. We start from description of a general algorithm for merging multi layers structure.
 We now present three algorithms for merging HNSW graphs: \textsc{SIGM},  \textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. These algorithms operate layer by layer. We first describe the general procedure for merging the multi-layer HNSW structure, followed by the specific logic for merging a single layer (\textit{layer-merge algorithms}).
@@ -431,6 +425,7 @@ Thus in line 24 $v^*$ is chosen from the set $\mathcal{C}_{not\_done}$, which is
 \end{algorithm}
 
 \section{Computational Experiments}
+\label{sec:experimens}
 
 \begin{figure}
   \centering
@@ -485,15 +480,27 @@ Another important fact which ~\ref{fig:search} shows that the number of distance
   \label{fig:recall_vs_merge}
 \end{figure}
 
+
+\section{Related Works on Graph Merging}
+\label{sec:relatedworks}
+While working on the paper, we have found that just recently researchers from \textbf{Elastic Search Lab} published a blog post \cite{ElasticHNSW2023} where they proposed fast merge algorithm, which also utilizes information about closeness of object in all graphs. The authors presented a scheme where a subset of vertices $J$ ``join set'' from the smaller graph is selected by greedy heuristic and inserted into the larger graph using standard HNSW insertion procedure. For the remaining vertices from the small graph, their already inserted neighbors and those neighbors' connections in the large graph are used to perform a limited beam search (named FAST-SEARCH-LAYER) to find connection candidates. This approach limits full insertions and accelerates the merging process.
+
+Ideologically approach of \cite{ElasticHNSW2023} is similar to our work, because the authors utilize information about closeness of object in all graphs, and use light-weighted version of the search algorithm FAST-SEARCH-LAYER (in our case it is \textsc{LOCAL SEARCH}. The ``join set'' $J$ from some point of view is similar to the set vertices for which \textsc{IGTM} and \textsc{CGTM} run the standard HNSW search. However, in \cite{ElasticHNSW2023} the ``join set'' $J$ is determined separately at the first stage by a greedy heuristic that tries to find a good cover set, while \textsc{IGTM} and \textsc{CGTM} establish the vertices for which to run \textsc{HNSW-Search} during the work in the main cycle in a more homogeneous way. 
+
+The other work which is relatively close to the present topic is a paper by Zhao and co-authors \cite{knnmerge}. They proposed two algorithms: Symmetric Merge (S-Merge) for combining two k-NN graphs and Joint Merge (J-Merge) for incrementally extending an existing graph with new points. These methods effectively combine graphs built on different subsamples while maintaining high search accuracy and accelerating computations. S-Merge discards half the neighbors in each list, while J-Merge leverages the hierarchical structure of the graph.
+
+The performance comparison of the different merge algorithms is a subject of future research. 
+
 \section{Conclusion and Future Work}
+\label{sec:conclusion}
 
 In this work, we introduced three algorithms to merge hierarchical navigable small-world graphs: \textsc{NGM} (Algorithm~\ref{alg:merge_naive}), \textsc{IGTM} (Algorithm~\ref{alg:IGTM}), and \textsc{CGTM} (Algorithm~\ref{alg:CGTM}). 
 
 The \textsc{NGM} algorithm provides a straightforward but computationally intensive approach, performing standard HNSW searches to find sets of candidates to reconstruct the neighborhood of a vertex chosen in an arbitrary way. \textsc{IGTM} and \textsc{CGTM} improve efficiency by leveraging locality—processing vertices close to each other sequentially and using the less expensive \textsc{LocalSearch} algorithm (Algorithm~\ref{alg:local_search}).
 
-Our experimental results demonstrate that both \textsc{IGTM} and \textsc{CGTM} significantly reduce the number of distance computations compared to the naive approach while maintaining comparable search accuracy. Our evaluation on the dataset of 1 million 128-dimensional vectors (SIFT1M) shows that \textsc{IGTM} and \textsc{CGTM} are more than 3 times faster than the straightforward insertion strategy \textsc{SIGM}, with minimal impact on recall performance.
+Our experimental results demonstrate that \textsc{IGTM} and \textsc{CGTM} significantly reduce the number of distance computations compared to the naive approach while maintaining comparable search accuracy. Our evaluation on the dataset of 1 million 128-dimensional vectors (SIFT1M) shows that \textsc{IGTM} and \textsc{CGTM} are more than 3 times faster than the straightforward insertion strategy \textsc{SIGM}, with minimal impact on recall performance.
 
-Interestingly, our experiments revealed that \textsc{IGTM} outperformed \textsc{CGTM} in terms of computational efficiency, contrary to our initial expectations. We had anticipated that \textsc{CGTM} would be more efficient since it can select the next vertex for neighborhood construction from both graphs, theoretically reducing the chances of getting stuck and thus requiring fewer costly standard search operations. However, it appears that the overhead of selecting the next processing vertex, for which a neighborhood is forming, in \textsc{CGTM} is too computationally expensive, and these costs are not offset by the reduction in searches when ``getting stuck'' with selecting the next close vertex to process. The study of this fact is a subject for further work.
+Interestingly, our experiments revealed that \textsc{IGTM} outperformed \textsc{CGTM} in terms of computational efficiency, contrary to our initial expectations. We had anticipated that \textsc{CGTM} would be more efficient since it can select the next vertex for neighborhood construction from both graphs, theoretically reducing the chances of getting stuck and thus requiring fewer costly standard search operations. However, it appears that the overhead of selecting the next processing vertex, for which a neighborhood is forming, in \textsc{CGTM} is too computationally expensive, and these costs are not offset by the reduction in searches when ``gets stuck'' with selecting the next close vertex to process. The study of this fact is a subject for further work.
 
 In addition, an important direction for future work is adapting the proposed merge algorithms to handle deleted vertices. This would enable their use in compaction processes, where graphs are periodically restructured to remove obsolete entries and maintain search efficiency. By extending our merge algorithms to filter out deleted nodes during the ``Processing Vertex Selection'' phase.
 
@@ -503,6 +510,5 @@ Additional areas for exploration include adaptive parameter selection based on d
 
 Finally, future work can be applied to develop a fast graph construction procedure using one of the merge algorithms. It seems very natural to start from the set of small graphs and merge them in a recursive manner.
 
-\bibliographystyle{plain}
-\bibliography{references}
+\printbibliography
 \end{document}
