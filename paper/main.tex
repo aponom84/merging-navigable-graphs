@@ -30,7 +30,11 @@
 
 \maketitle
 
-%TODO здесь надо сказать, именно проважность задачи k-nn для прирожений. Упомянть про RAG, а далее уже перейти к формальной постановке задаче и какие методы для её решения бывают. Далее надо сказать про после того, как было упомянуто про графовые методы, сказать что там етсь задача объединения графов построенных на разных данных. В частности это может быть важно при compaction. 
+\begin{abstract}
+This paper addresses the challenge of merging hierarchical navigable small world (HNSW) graphs, a critical operation for distributed systems, incremental indexing, and database compaction. We propose three algorithms for this task: Naive Graph Merge (NGM), Intra Graph Traversal Merge (IGTM), and Cross Graph Traversal Merge (CGTM). These algorithms differ in their approach to vertex selection and candidate collection during the merge process. We conceptualize graph merging as an iterative process with four key steps: processing vertex selection, candidate collection, neighborhood construction, and information propagation. Our experimental evaluation on the SIFT1M dataset demonstrates that IGTM and CGTM significantly reduce computational costs compared to naive approaches, requiring up to 70\% fewer distance computations while maintaining comparable search accuracy. Surprisingly, IGTM outperforms CGTM in efficiency, contrary to our initial expectations. The proposed algorithms enable efficient consolidation of separately constructed indices, supporting critical operations in modern vector databases and retrieval systems that rely on HNSW for similarity search.
+\end{abstract}
+
+\textbf{Keywords:} approximate nearest neighbor search, hierarchical navigable small world, graph merging, vector databases, information retrieval
 
 \section{Introduction}
 \label{sec:intro}
