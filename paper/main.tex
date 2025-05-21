@@ -67,9 +67,9 @@ Three main approaches have been developed for tackling the nearest neighbor sear
 \begin{enumerate}
     \item \textbf{Space-partitioning trees}: These methods divide the vector space into hierarchical regions, enabling logarithmic search complexity in low dimensions. Notable examples include KD-trees \cite{bentley1990k}, R-trees \cite{guttman1984r}, VP-trees \cite{yianilos1993}, M-trees \cite{ciaccia1997m}, and Cover trees \cite{beygelzimer2006cover}. A comprehensive overview of these approaches for metric spaces is provided by Zezula et al. \cite{zezula2006similarity}.
 
-    \item \textbf{Mapping-based methods}: These techniques transform the original data into representations that allow for efficient search. This category includes Locality-Sensitive Hashing (LSH) \cite{Indyk1998,Gionis1999,Datar2004,Andoni2006,Andoni2015} and Product Quantization approaches \cite{Jegou2011,Ge2013,Norouzi2013}, which encode vectors into compact codes that approximate distances between points.
+    \item \textbf{Mapping-based methods}: These techniques transform the original data into representations that allow for efficient search. This category includes Locality-Sensitive Hashing (LSH) \cite{Indyk1998,Gionis1999,Datar2004,Andoni2006,Andoni2015} and Product Quantization approaches \cite{Jegou2011,Ge2013,Norouzi2013}, which encode vectors into compact codes that approximate the distances between points.
 
-    \item \textbf{Navigable graph-based methods}: The most recent and currently state-of-the-art approach that constructs graph structures where vertices represent data points and edges connect similar points. These graphs are designed to allow ``greedy-like'' algorithms to perform directed traversal through the data space.
+    \item \textbf{Navigable graph-based methods}: The most recent and currently state-of-the-art approach that constructs graph structures where vertices represent data points and edges connect similar points. These graphs are designed to allow ``greedy-like'' algorithms to perform a directed traversal through the data space.
 \end{enumerate}
 
 \subsection{Hierarchical Navigable Small World (HNSW)}
@@ -78,7 +78,7 @@ Hierarchical Navigable Small World (HNSW) \cite{hnsw} is a state of the art navi
 
 %Among graph-based methods, Hierarchical Navigable Small World (HNSW)  and its predecessor Navigable Small World (NSW) \cite{nsw2011,nsw2012,nsw2014} have demonstrated superior performance in modern ANN benchmarks. These approaches leverage the small-world phenomenon to create graph structures with both short-range and long-range connections, enabling efficient navigation through high-dimensional data spaces.
 
-HNSW \cite{hnsw} extends the navigable graphs concept by organizing points into a hierarchy of navigable graphs also named as layers. Each layer contains a progressively smaller subset of data points. The bottommost layer contains all points, while higher layers form a sparse representation of the data space. 
+HNSW \cite{hnsw} extends the navigable graphs concept by organizing points in a hierarchy of navigable graphs also named layers. Each layer contains a progressively smaller subset of data points. The bottommost layer contains all points, while the upper layers form a sparse representation of the data space. 
 Graphs of all levels glued together form a navigable small world graph similar to NSW  \cite{nsw2011,nsw2012,nsw2014}. An explicit separation set of edges of different lengths to layers helps to reduce the number of computations in search while traversing vertexes with high degrees, also called hubs. A schematic example of HNSW structure presented in Fig. \ref{fig:hnsw}.
 
 \begin{figure}
@@ -100,7 +100,7 @@ Graph merging provides a way to periodically compact the structure by creating a
 The merge operation can be conceptualized as an iterative process consisting of four key steps:
 
 \begin{enumerate}
-    \item \textbf{Processing Vertex Selection}: Choosing a vertex $v^*$ for which we aim to construct a neighborhood in the merged graph, and determining which original graph it belongs to.
+    \item \textbf{Processing Vertex Selection}: Choosing a vertex $v^*$ for which we aim to construct a neighborhood in the merged graph and determining which original graph it belongs to.
    
     \item \textbf{Candidate Collection}: Gathering potential neighbors from both input graphs. This involves searching within each graph structure to find vertices that should be considered for inclusion in $v^*$'s neighborhood.
    
@@ -239,10 +239,10 @@ The choice of neighborhood construction strategy significantly impacts both sear
 \label{sec:merge}
 
 %We provide 3 merge algorithms: "Naive Merge", "IGTM", and "CGTM". We also refer to these algorithm as layer-merge algorithms. "Naive Merge" is a straight forward method, while "IGTM" and "CGTM" are more advanced. Together, these two algorithms constitute the main contribution of the work. The HNSW structure is a sequence of graphs, called layers. We start from description of a general algorithm for merging multi layers structure.
-We now present three algorithms for merging HNSW graphs: \textsc{SIGM},  \textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. These algorithms operate layer by layer. We first describe the general procedure for merging the multi-layer HNSW structure, followed by the specific logic for merging a single layer (\textit{layer-merge algorithms}).
+We now present three algorithms for merging HNSW graphs: \textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. These algorithms operate layer by layer. We first describe the general procedure for merging the multi-layer HNSW structure, followed by the specific logic for merging a single layer (\textit{layer-merge algorithms}).
 
 \subsection{Simple Insertion Graph Merge}
-Before we start, we need provide a short descriptopn of simple insertion graph merge (SIGM). It is a default merging strategy that uses an insertion operation to merge graphs. It takes the largest graph and sequentially inserts data from other graph. Actually, it is not merging procedure, but we use it as a basic benchmark.
+Before we start, we need to provide a short description of simple insertion graph merge (SIGM). It is a default merging strategy that uses an insertion operation to merge graphs. It takes the largest graph and sequentially inserts data from other graph. Actually, it is not a merging procedure, but we use it as a basic benchmark.
 
 \subsection{HNSW General Merge Framework}
 
@@ -266,7 +266,7 @@ The \textsc{HNSW-General-Merge} algorithm (Algorithm~\ref{alg:general_merge}) pr
 \end{algorithmic}
 \end{algorithm}
 
-Note that the merging of different layers (iterations of the loop in Algorithm~\ref{alg:general_merge}) is independent and can potentially be parallelized.
+% Note that the merging of different layers (iterations of the loop in Algorithm~\ref{alg:general_merge}) is independent and can potentially be parallelized.
 
 %\subsection{Naive Merge}
 %The Naive Merge algorithm \ref{alg:merge_naive} surprisingly is very simple. It takes one vertex $v^*$ by one from the graph $G^a$. Then algorithm prepares the candidate set $\mathcal{C}$ for a new neighborhood (lines 6,7). It uses \textsc{HNSW-Search} to get $m$-closest vertices to $v^*$ in the graph $G^b$, and combines with an old neighborhood of the vertex $v^*$. After that in the line 8 the candidate set $\mathcal{C}$ is passed into the neighborhood construction function, which selects the vertices for the new merged neighborhood for $v^*$.
@@ -314,10 +314,6 @@ This approach ensures that each vertex in the merged graph has an appropriate ne
 \end{algorithm}
 
 \subsection{Intra Graph Traversal Merge}
-The most effort of the \textsc{NGM} algorithm lies in obtaining the set of neighborhood candidates from the other graph utilising \textsc{HNSW-Search} procedure, that every time traverses layer graphs from the top-level down to layer number $\ell$. The number of computations can be reduced if we select the next vertex to process $v^*$ close to the previous one (line 15), instead of randomly choosing it. Thus, for the new $v^*$ the neighborhood candidates will also be close to the previous candidates set. To search these new neighborhood candidates we can use \textsc{LocalSearch} procedure, that traverses the same graph staring from the previous neighborhood candidates set $\mathcal{P}^b$ (lines 11). In line 14 in set $\mathcal{P}^b$ we keep only $M$-closest to $v^*$ candidates.\\
-In lines 15,16 we select new processing vertex $v^*$  close to the previous processing vertex $v^*$ that was not already processed.  
-To ensure that the new processing vertex $v^*$ is not very far from the previous $v^*$ we bound the size of the results of the \textsc{LocalSearch} procedure controlling by next\_step\_k parameter. Once \textsc{LocalSearch} can't find enough close not processed vertex (if condition in line 17), in line 7 we choice new $v^*$ from the set $\mathcal{V}_{not\_done}$ randomly. \\
-After we have processed all vertices from the graph $G^a$. We do the same for the vertices of graph $G^b$ (lines 21-22).  
 
 \begin{algorithm}
 \caption{\textsc{IGTM}($\mathcal{H}_a, \mathcal{H}_b, \ell, \text{jump\_ef}, \text{local\_ef}, \text{next\_step\_k}, M, m$)}\label{alg:IGTM}
@@ -365,9 +361,14 @@ After we have processed all vertices from the graph $G^a$. We do the same for th
 \end{algorithmic}
 \end{algorithm}
 
+The most effort of the \textsc{NGM} algorithm lies in obtaining the set of neighborhood candidates from the other graph utilizing the \textsc{HNSW-Search} procedure, which every time traverses the layer graphs from the top level down to the layer number $\ell$. The number of computations can be reduced if we select the next vertex to process $v^*$ close to the previous one (line 15 of the algorithm ~\ref{alg:IGTM}), instead of randomly choosing it. Thus, for the new $v^*$ the neighborhood candidates will also be close to the previous candidates set. To search for these new neighborhood candidates we can use the \textsc{LocalSearch} procedure which traverses the same graph staring from the previous neighborhood candidates set $\mathcal{P}^b$ (lines 11). In line 14 in the set $\mathcal{P}^b$ we keep only $M$-closest to $v^*$ candidates.\\
+In lines 15,16, we select a new processing vertex $v^*$  close to the previous processing vertex $v^*$ that was not already processed.  
+To ensure that the new processing vertex $v^*$ is not very far from the previous $v^*$ we bound the size of the results of the \textsc{LocalSearch} procedure controlling by next\_step\_k parameter. Once \textsc{LocalSearch} cannot find enough close unprocessed vertex (if condition in line 17), in line 7 we choose a new $v^*$ from the set $\mathcal{V}_{not\_done}$ randomly.\\
+After we have processed all vertices from the graph $G^a$. We do the same for the vertices of graph $G^b$ (lines 21-22).  
+
 \subsection{Cross Graph Traversal Merge}
 
-Cross Graph Traversal Merge (\textsc{CGTM}) algorithm is similar to \textsc{IGTM} utilizes \textsc{LocalSearch} procedure to reduce computation efforts. The difference is that \textsc{IGTM} algorithm chooses the next processing vertex $v^*$ from the same graph, while \textsc{CGTM} looks for the new processing vertex $v^*$ in both graphs $G^a$, and $G^b$. 
+Cross Graph Traversal Merge (\textsc{CGTM}) algorithm is similar to \textsc{IGTM} utilizes the \textsc{LocalSearch} procedure to reduce computation efforts. The difference is that the \textsc{IGTM} algorithm chooses the next processing vertex $v^*$ from the same graph, while \textsc{CGTM} looks for the new processing vertex $v^*$ in both graphs $G^a$, and $G^b$. 
 Thus in line 24 $v^*$ is chosen from the set $\mathcal{C}_{not\_done}$, which is one of the not processed vertex of both graph (line 21). The intuition underlying \textsc{CGTM} algorithm is that when we choose a new processing vertex $v^*$ from both graphs, we reduce the number of times when $v^*$ is chosen randomly, thus minimizing the number of times that we use the more expensive search procedure \textsc{HNSW-Search}.
 
 \begin{algorithm}
@@ -448,15 +449,15 @@ Thus in line 24 $v^*$ is chosen from the set $\mathcal{C}_{not\_done}$, which is
 
 \subsection{Setup}
 
-We evaluated the proposed merge algorithms on the standard ANN benchmark dataset SIFT1M of 1 million 128-dimensional vectors. We divided it into two disjoint subsets of 500k vectors. On those subsets we built two HNSW indices $\mathcal{H}_a$ and $\mathcal{H}_b$ using the following parameters: $M = 16$, $M0$ = 32, ef\_construction = 32.
-These indices are then merged using simple insertion strategy \textsc{SIGM} and the three proposed algorithms: \textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. We keep the same values of the parameters $m = 16$, and $m0 = 32$ as the target neighborhood size in the merged graph.
+We evaluated the proposed merge algorithms on the standard ANN benchmark dataset SIFT1M of 1 million 128-dimensional vectors. We divided it into two disjoint subsets of 500k vectors. In these subsets, we built two HNSW indices $\mathcal{H}_a$ and $\mathcal{H}_b$ using the following parameters: $M = 16$, $M0$ = 32, ef\_construction = 32.
+Then these indices were merged using a simple insertion strategy \textsc{SIGM} and the three proposed algorithms: \textsc{NGM}, \textsc{IGTM}, and \textsc{CGTM}. We keep the same values of the parameters $m = 16$ and $m0 = 32$ as the target neighborhood size in the merged graph.
 
 In order to be independent of implementation details and low-level optimisations, we made a comparison of the algorithms based on the number of distance computations required for the merge process.
 
 Other important characteristics of the merge process is how accurate the merge is done. In this case, the word ``merging accuracy'' can mean different things. For example, we can estimate merging accuracy as how similar the neighborhoods of the merged graph to the neighborhoods of the graph constructed by simple insertion strategy \textsc{SIGM}. 
 Another way, which we prefer, is to verify how the merged graph is good for search. To quantify search quality, we performed a standard search performance test on the merged graphs. So, for the merged graphs, we have measured a trade-off between recall and the number of distance computations, by running algorithm ~\ref{alg:hnsw_search} with different values of the parameter $L$ (search expansion factor). We measured the recall@5 metric for L = 32, 40, 50, 64, and 72. This metric indicates how often the true nearest neighbors appear in the top-5 results returned by the search algorithm.
 
-Formally, for a given query point \(q\), let \(P_k(q)\) denote the set of \(k\) true nearest neighbors, and let \(A_k(q)\) be the set of top \(k\) points returned by the algorithm. Then, the recall@k is defined as:
+Formally, for a given query point \(q\), let \(P_k(q)\) denote the set of \(k\) true nearest neighbors, and let \(A_k(q)\) be the set of the top \(k\) points returned by the algorithm. Then, recall@k is defined as:
 
 \[
 \text{recall@}k = \frac{|P_k(q) \cap A_k(q)|}{k}
@@ -466,12 +467,12 @@ In our experiment as recall@5 we report an averaged value over all sequences of 
 
 \subsection{Results}
 
-The searching quality of the merged graph represented in Fig. ~\ref{fig:search}. The graph plots trade-off between recall and the number of distance computations. As can be seen, \textsc{SIGM} with ef\_construction $\ge$ 32 and \textsc{NGM} with parameter jump\_ef = 20 produce merged graph with slightly better searing quality than other algorithms.
+The searching quality of the merged graph is represented in Fig. ~\ref{fig:search}. The graph plots trade-off between recall and the number of distance computations. As can be seen, \textsc{SIGM} with ef\_construction $\ge$ 32 and \textsc{NGM} with parameter jump\_ef = 20 produce merged graph with slightly better searing quality than other algorithms.
 
 Another important fact which ~\ref{fig:search} shows that the number of distance computations performed by the search algorithm (Algorithm ~\ref{alg:hnsw_search}) for equal parameter $L$ are almost the same.  Therefore, the graph is better if it provides better search recall for a fixed value of the parameter $L$. Taking this into account, we can better interpret Fig. ~\ref{fig:recall_vs_merge}. It is easy to see the following:  
 
 \begin{itemize}
-    \item\textsc{IGTM} and \textsc{IGTM}  in our experiment setup  achieve recall better than \textsc{SIGM} with parameter ef\_construciton = 24;
+    \item\textsc{IGTM} and \textsc{CGTM} in our experiment setup  achieve recall better than \textsc{SIGM} with parameter ef\_construciton = 24;
     \item \textsc{NGM} and \textsc{SIGM} perform the most computations, but achieves the highest recall, as it exhaustively reconstructs each neighborhood;
     \item \textsc{CGTM} achieving comparable recall with approximately 60\% fewer computations than \textsc{NGM} and \textsc{SIGM};
     \item \textsc{IGTM} provides the best run-time performance, reducing distance computations about 20\% than \textsc{CGTM}, and about 70\% than \textsc{NGM} and \textsc{SIGM} while achieving comparable recall.
@@ -487,7 +488,7 @@ Another important fact which ~\ref{fig:search} shows that the number of distance
 
 \section{Related Works on Graph Merging}
 \label{sec:relatedworks}
-While working on the paper, we have found that just recently researchers from \textbf{Elastic Search Lab} published a blog post \cite{ElasticHNSW2023} where they proposed fast merge algorithm, which also utilizes information about closeness of object in all graphs. The authors presented a scheme where a subset of vertices $J$ ``join set'' from the smaller graph is selected by greedy heuristic and inserted into the larger graph using standard HNSW insertion procedure. For the remaining vertices from the small graph, their already inserted neighbors and those neighbors' connections in the large graph are used to perform a limited beam search (named FAST-SEARCH-LAYER) to find connection candidates. This approach limits full insertions and accelerates the merging process.
+While working on the paper, we have found that just recently researchers from \textbf{Elastic Search Lab} published a blog post \cite{ElasticHNSW2023} where they proposed a fast merge algorithm, which also utilizes information about closeness of object in all graphs. The authors presented a scheme where a subset of vertices $J$ ``join set'' from the smaller graph is selected by greedy heuristic and inserted into the larger graph using standard HNSW insertion procedure. For the remaining vertices from the small graph, their already inserted neighbors and those neighbors' connections in the large graph are used to perform a limited beam search (named FAST-SEARCH-LAYER) to find connection candidates. This approach limits full insertions and accelerates the merging process.
 
 Ideologically approach of \cite{ElasticHNSW2023} is similar to our work, because the authors utilize information about closeness of object in all graphs, and use light-weighted version of the search algorithm FAST-SEARCH-LAYER (in our case it is \textsc{LOCAL SEARCH}. The ``join set'' $J$ from some point of view is similar to the set vertices for which \textsc{IGTM} and \textsc{CGTM} run the standard HNSW search. However, in \cite{ElasticHNSW2023} the ``join set'' $J$ is determined separately at the first stage by a greedy heuristic that tries to find a good cover set, while \textsc{IGTM} and \textsc{CGTM} establish the vertices for which to run \textsc{HNSW-Search} during the work in the main cycle in a more homogeneous way. 
 
