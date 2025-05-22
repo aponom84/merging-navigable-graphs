@@ -8,7 +8,7 @@ The edges of the first and second graphs are omitted for clarity.
 The edges of the merged graph are shown as black lines.
 Black points indicate the vertices whose neighborhoods in the merged graph were formed.
 Yellow points represent the set of vertices for which the distances were calculated.
-The red point is the vertex  $v^*$ for which neighborhood is forming.
+The red point is the vertex ![v-star](https://latex.codecogs.com/svg.image?v%5E%7B%2A%7D ) for which neighborhood is forming.
 
 ## Naive Graph  Merge (NGM)
 
@@ -22,4 +22,4 @@ in arbitrary maneer, whithout taking acount inforamtion of the previous steps.
 
 ![IGTM example](animations/IGTM-n1000k5-small2.gif)
 <br>
-The most effort of the NGM algorithm lies in obtaining the set of neighborhood candidates from the other graph utilizing the HNSW-Search procedure, which every time traverses the layer graphs from the top level down to the layer number $L$. The number of computations can be reduced if we select the next vertex to process $v^*$ close to the previous one, instead of randomly choosing it. Thus, for the new $v^*$ the neighborhood candidates will also be close to the previous candidates set. To search for these new neighborhood candidates we can use the LocalSearch procedure which traverses the same graph staring from the previous neighborhood candidates set.
+The most effort of the NGM algorithm lies in obtaining the set of neighborhood candidates from the other graph utilizing the HNSW-Search procedure, which every time traverses the layer graphs from the top level down to the layer number $L$. The number of computations can be reduced if we select the next vertex to process ![v-star](https://latex.codecogs.com/svg.image?v%5E%7B%2A%7D ) close to the previous one, instead of randomly choosing it. Thus, for the new ![v-star](https://latex.codecogs.com/svg.image?v%5E%7B%2A%7D ) the neighborhood candidates will also be close to the previous candidates set. To search for these new neighborhood candidates we can use the LocalSearch procedure which traverses the same graph staring from the previous neighborhood candidates set.
