@@ -4,11 +4,7 @@ Navigable Small World Graphs: NGM, IGTM, CGTM.
 
 ## Itra Graph Traversal Merge (IGTM)
 
-<video width="600" autoplay loop muted>
-  <source src="animations/IGTM-n1000k5.mp4" type="video/mp4">
-  <source src="animations/IGTM-n1000k5.webm" type="video/webm">
-  Your browser donnot support video.
-</video>
+![IGTM example](animations/IGTM-n1000k5-small.gif)
 
 An example work of IGTM algorithm
 
