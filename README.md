@@ -13,7 +13,7 @@ The red point is the vertex  $v^*$ for which neighborhood is forming.
 ## Naive Graph  Merge (NGM)
 
 ![NGM example](animations/NGM-n1000k5-small2.gif)
-
+<br>
 NGM algorithm is a straightforward method for merging. It don't take into account information about closeness of object in all graph.
 To obtain set of candidates it uses standard HNSW-Search function. The vertex for which neighborhood is forming, is selected 
 in arbitrary maneer, whithout taking acount inforamtion of the previous steps.
@@ -21,4 +21,5 @@ in arbitrary maneer, whithout taking acount inforamtion of the previous steps.
 ## Itra Graph Traversal Merge (IGTM)
 
 ![IGTM example](animations/IGTM-n1000k5-small2.gif)
+<br>
 The most effort of the NGM algorithm lies in obtaining the set of neighborhood candidates from the other graph utilizing the HNSW-Search procedure, which every time traverses the layer graphs from the top level down to the layer number $L$. The number of computations can be reduced if we select the next vertex to process $v^*$ close to the previous one, instead of randomly choosing it. Thus, for the new $v^*$ the neighborhood candidates will also be close to the previous candidates set. To search for these new neighborhood candidates we can use the LocalSearch procedure which traverses the same graph staring from the previous neighborhood candidates set.
