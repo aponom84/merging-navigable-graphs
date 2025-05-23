@@ -34,3 +34,20 @@ The most effort of the NGM algorithm lies in obtaining the set of neighborhood c
 
 ## Cross Graph Traversal Merge (CGTM)
 CGTM is similar to IGTM, but the next vetrex ![v-star](https://latex.codecogs.com/svg.image?v%5E%7B%2A%7D ) whose neighborhood is being formed, is selected from both graphs.
+
+
+## Citation
+
+If you use this work, please cite the following paper:
+
+```bibtex
+@misc{ponomarenko2025algorithmsmerginghierarchicalnavigable,
+  title        = {Three Algorithms for Merging Hierarchical Navigable Small World Graphs},
+  author       = {Alexander Ponomarenko},
+  year         = {2025},
+  eprint       = {2505.16064},
+  archivePrefix= {arXiv},
+  primaryClass = {cs.DS},
+  url          = {https://arxiv.org/abs/2505.16064}
+}
+```
